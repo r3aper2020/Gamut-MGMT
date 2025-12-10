@@ -12,14 +12,16 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-    const { user, loading, login, logout } = useFirebaseAuth();
+    const { user, loading, login, logout, refreshUser } = useFirebaseAuth();
 
     const value = {
         user,
         login,
         logout,
+        refreshUser,
         loading,
         isAuthenticated: !!user,
+        organizationId: user?.organizationId, // Ensure this claim is mapped or key is present in user object
         isOrgOwner: user?.role === 'org_owner',
         isManager: user?.role === 'manager',
         isTeamMember: user?.role === 'team_member',

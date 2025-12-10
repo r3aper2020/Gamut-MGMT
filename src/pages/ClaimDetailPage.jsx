@@ -1,11 +1,18 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreComments } from '../hooks/useFirestore';
 import ClaimStatusBadge from '../components/ClaimStatusBadge';
-import { ArrowLeft, DollarSign, Calendar, Building2, X, User, MapPin, ImageIcon, MessageSquare, Send, CheckCircle, XCircle, ClipboardList, FileText, CheckCircle2, AlertTriangle, BookOpen, AlertCircle, Eye } from 'lucide-react';
+import LineItemRow from '../components/LineItemRow';
+import ApprovalActions from '../components/ApprovalActions';
+import CommentsSection from '../components/CommentsSection';
+import { ArrowLeft, DollarSign, Calendar, Building2, User, MapPin, ImageIcon, MessageSquare, Send, CheckCircle, XCircle, ClipboardList, FileText, CheckCircle2, AlertTriangle, Eye, Plus, X } from 'lucide-react';
+
+
+import { performAdminAction, checkHealth } from '../services/api';
+// import { X } from 'lucide-react'; // Ensure X is imported if used (it seems used in image lightbox)
 
 export default function ClaimDetailPage() {
     const { id } = useParams();
@@ -17,6 +24,8 @@ export default function ClaimDetailPage() {
     const { comments, loading: commentsLoading } = useFirestoreComments(id);
     const [comment, setComment] = useState('');
     const [selectedImage, setSelectedImage] = useState(null);
+
+    const [groupBy, setGroupBy] = useState('category'); // 'category' (standard) or 'room'
 
     useEffect(() => {
         async function fetchClaim() {
@@ -52,6 +61,113 @@ export default function ClaimDetailPage() {
         fetchClaim();
     }, [id]);
 
+    const [editingItemIndex, setEditingItemIndex] = useState(null);
+    const [editedItemData, setEditedItemData] = useState(null);
+
+    // ... existing handlers ...
+
+    const handleEditItem = (index) => {
+        setEditingItemIndex(index);
+        setEditedItemData({ ...claim.lineItems[index] });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingItemIndex(null);
+        setEditedItemData(null);
+    };
+
+    const handleSaveItem = async (index) => {
+        try {
+            const updatedLineItems = [...claim.lineItems];
+
+            // Recalculate total
+            const quantity = parseFloat(editedItemData.quantity) || 0;
+            const unitPrice = parseFloat(editedItemData.unitPrice) || 0;
+            const total = quantity * unitPrice;
+
+            updatedLineItems[index] = {
+                ...editedItemData,
+                quantity,
+                unitPrice,
+                total
+            };
+
+            const claimRef = doc(db, 'claims', id);
+            await updateDoc(claimRef, {
+                lineItems: updatedLineItems,
+                amount: updatedLineItems.reduce((acc, item) => acc + item.total, 0)
+            });
+
+            setClaim(prev => ({
+                ...prev,
+                lineItems: updatedLineItems,
+                amount: updatedLineItems.reduce((acc, item) => acc + item.total, 0)
+            }));
+
+            setEditingItemIndex(null);
+            setEditedItemData(null);
+        } catch (error) {
+            console.error("Error updating line item:", error);
+            alert("Failed to save changes.");
+        }
+    };
+
+    const handleDeleteItem = async (index) => {
+        if (!window.confirm("Are you sure you want to delete this item?")) return;
+
+        try {
+            const updatedLineItems = claim.lineItems.filter((_, i) => i !== index);
+
+            const claimRef = doc(db, 'claims', id);
+            await updateDoc(claimRef, {
+                lineItems: updatedLineItems,
+                amount: updatedLineItems.reduce((acc, item) => acc + item.total, 0)
+            });
+
+            setClaim(prev => ({
+                ...prev,
+                lineItems: updatedLineItems,
+                amount: updatedLineItems.reduce((acc, item) => acc + item.total, 0)
+            }));
+        } catch (error) {
+            console.error("Error deleting line item:", error);
+            alert("Failed to delete item.");
+        }
+    };
+
+    const handleAddItem = async () => {
+        const newItem = {
+            category: 'General',
+            description: 'New Item',
+            quantity: 1,
+            unit: 'EA',
+            unitPrice: 0.00,
+            total: 0.00,
+            adjusterNotes: ''
+        };
+
+        try {
+            const updatedLineItems = [...(claim.lineItems || []), newItem];
+
+            const claimRef = doc(db, 'claims', id);
+            await updateDoc(claimRef, {
+                lineItems: updatedLineItems
+            });
+
+            setClaim(prev => ({
+                ...prev,
+                lineItems: updatedLineItems
+            }));
+
+            // Automatically enter edit mode for the new item
+            setEditingItemIndex(updatedLineItems.length - 1);
+            setEditedItemData(newItem);
+        } catch (error) {
+            console.error("Error adding line item:", error);
+            alert("Failed to add new item.");
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -74,34 +190,7 @@ export default function ClaimDetailPage() {
         );
     }
 
-    const handleApprove = () => {
-        alert('Claim approved! (This is a mockup - no actual changes made)');
-    };
 
-    const handleReject = () => {
-        alert('Claim rejected! (This is a mockup - no actual changes made)');
-    };
-
-    const handleSubmitToInsurance = () => {
-        alert('Claim submitted to insurance! (This is a mockup - no actual changes made)');
-    };
-
-    const handleAddComment = async (e) => {
-        e.preventDefault();
-        if (!comment.trim()) return;
-
-        try {
-            await addDoc(collection(db, 'comments'), {
-                claimId: id,
-                userId: user.uid,
-                text: comment,
-                createdAt: Timestamp.now(),
-            });
-            setComment('');
-        } catch (error) {
-            console.error('Error adding comment:', error);
-        }
-    };
 
     return (
         <div className="space-y-6">
@@ -114,6 +203,19 @@ export default function ClaimDetailPage() {
                     <ArrowLeft size={18} />
                     Back
                 </button>
+                <button
+                    onClick={async () => {
+                        try {
+                            const res = await performAdminAction();
+                            alert("Admin Action Success: " + JSON.stringify(res));
+                        } catch (e) {
+                            alert("Admin Action Failed: " + e.message);
+                        }
+                    }}
+                    className="btn btn-sm btn-outline-danger"
+                >
+                    Test Admin Action (Backend)
+                </button>
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold text-gray-100">{claim.title}</h1>
                     <p className="text-gray-500 mt-1">{claim.claimNumber}</p>
@@ -121,14 +223,14 @@ export default function ClaimDetailPage() {
                 <ClaimStatusBadge status={claim.status} />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Content */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Claim Details */}
-                    <div className="card">
+            {/* Top Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                {/* Claim Details (Top Left) */}
+                <div className="lg:col-span-2">
+                    <div className="card h-full">
                         <h2 className="text-xl font-semibold text-gray-100 mb-4">Claim Details</h2>
 
-                        <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                             <div className="flex items-center gap-3">
                                 <div className="bg-blue-500/20 p-2 rounded-lg">
                                     <DollarSign className="text-blue-400" size={20} />
@@ -178,292 +280,362 @@ export default function ClaimDetailPage() {
                         </div>
 
                         {claim.metadata?.rejectionReason && (
-                            <div className="mt-4 p-4 bg-red-500/10 border border-red-500/50 rounded-lg">
-                                <p className="text-sm font-medium text-red-800 mb-1">Rejection Reason:</p>
-                                <p className="text-sm text-red-400">{claim.metadata.rejectionReason}</p>
+                            <div className={`mt-4 p-4 rounded-lg border ${claim.status === 'revision_requested'
+                                ? 'bg-yellow-500/10 border-yellow-500/50'
+                                : 'bg-red-500/10 border-red-500/50'
+                                }`}>
+                                <p className={`text-sm font-medium mb-1 ${claim.status === 'revision_requested' ? 'text-yellow-400' : 'text-red-400'
+                                    }`}>
+                                    {claim.status === 'revision_requested' ? 'Revision Instructions:' : 'Rejection Reason:'}
+                                </p>
+                                <p className={`text-sm ${claim.status === 'revision_requested' ? 'text-yellow-200' : 'text-red-300'
+                                    }`}>{claim.metadata.rejectionReason}</p>
                             </div>
                         )}
                     </div>
+                </div>
 
-                    {/* Damage Assessment & Estimate */}
-                    {(claim.aiAnalysis || claim.lineItems?.length > 0) && (
-                        <div className="card space-y-6">
-                            <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
-                                <ClipboardList size={20} />
-                                Damage Assessment & Estimate
-                            </h2>
-
-                            {/* AI Analysis */}
-                            {claim.aiAnalysis && (
-                                <div className="bg-slate-800/50 rounded-lg p-4 space-y-4">
-                                    <div className="flex items-start justify-between">
-                                        <h3 className="font-medium text-gray-100 flex items-center gap-2">
-                                            <FileText size={18} className="text-blue-400" />
-                                            AI Restoration Analysis
-                                        </h3>
-                                        <div className="flex items-center gap-1 text-sm bg-blue-500/20 text-blue-300 px-2 py-1 rounded">
-                                            <span>Confidence:</span>
-                                            <span className="font-semibold">{Math.round(claim.aiAnalysis.confidenceScore * 100)}%</span>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-gray-300 text-sm leading-relaxed">
-                                        {claim.aiAnalysis.summary}
-                                    </p>
-
-                                    {claim.aiAnalysis.restorationInstructions?.length > 0 && (
-                                        <div className="space-y-2">
-                                            <p className="text-sm font-medium text-gray-400">Suggested Actions:</p>
-                                            <ul className="space-y-1">
-                                                {claim.aiAnalysis.restorationInstructions.map((instruction, idx) => (
-                                                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-300">
-                                                        <CheckCircle2 size={16} className="text-green-500 mt-0.5 shrink-0" />
-                                                        {instruction}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Line Items Table */}
-                            {claim.lineItems?.length > 0 && (
-                                <div>
-                                    <h3 className="font-medium text-gray-100 mb-4 flex items-center gap-2">
-                                        <DollarSign size={18} className="text-green-400" />
-                                        Estimate Line Items
-                                    </h3>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm text-left">
-                                            <thead className="bg-slate-800 text-gray-400 uppercase text-xs">
-                                                <tr>
-                                                    <th className="px-4 py-3 rounded-tl-lg">Category</th>
-                                                    <th className="px-4 py-3">Description & Context</th>
-                                                    <th className="px-4 py-3">Evidence</th>
-                                                    <th className="px-4 py-3 text-right">Qty</th>
-                                                    <th className="px-4 py-3 text-right">Unit Price</th>
-                                                    <th className="px-4 py-3 text-right rounded-tr-lg">Total</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-700">
-                                                {claim.lineItems.map((item, idx) => (
-                                                    <tr key={idx} className="hover:bg-slate-800/30">
-                                                        <td className="px-4 py-3 text-gray-400 align-top">{item.category}</td>
-                                                        <td className="px-4 py-3 align-top">
-                                                            <div className="text-gray-200 font-medium">{item.description}</div>
-
-                                                            {/* AI Reasoning */}
-                                                            {item.aiReasoning && (
-                                                                <div className="text-xs text-blue-300 mt-1.5 flex items-start gap-1.5">
-                                                                    <div className="mt-0.5">✨</div>
-                                                                    <span>{item.aiReasoning}</span>
-                                                                </div>
-                                                            )}
-
-                                                            {/* Reference Standard */}
-                                                            {item.referenceSource && (
-                                                                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded bg-slate-700/50 border border-slate-600">
-                                                                    <BookOpen size={12} className="text-slate-400" />
-                                                                    <span className="text-xs text-slate-300 font-medium">{item.referenceSource.code}</span>
-                                                                    <span className="text-xs text-slate-500 border-l border-slate-600 pl-1.5">{item.referenceSource.description}</span>
-                                                                </div>
-                                                            )}
-
-                                                            {/* Clarification Note */}
-                                                            {item.userFullfilled && item.clarificationNote && (
-                                                                <div className="mt-2 flex items-start gap-1.5 text-xs text-amber-400 bg-amber-400/10 p-2 rounded border border-amber-400/20">
-                                                                    <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                                                                    <div>
-                                                                        <span className="font-semibold block">User Verified:</span>
-                                                                        {item.clarificationNote}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-4 py-3 align-top">
-                                                            {/* Linked Photos */}
-                                                            {item.linkedPhotoIds?.length > 0 && (
-                                                                <div className="flex -space-x-2 overflow-hidden">
-                                                                    {item.linkedPhotoIds.map(photoId => {
-                                                                        const photo = claim.attachments.find(a => (a.id || a) === photoId || a.id === photoId);
-                                                                        const url = typeof photo === 'string' ? photo : photo?.url;
-                                                                        if (!url) return null;
-
-                                                                        return (
-                                                                            <div
-                                                                                key={photoId}
-                                                                                className="relative w-10 h-10 rounded-lg border-2 border-slate-900 cursor-pointer hover:scale-110 transition-transform z-0 hover:z-10"
-                                                                                onClick={() => setSelectedImage(photo)}
-                                                                                title="View Evidence Match"
-                                                                            >
-                                                                                <img src={url} alt="Evidence" className="w-full h-full object-cover" />
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right text-gray-300 align-top">
-                                                            {item.quantity} {item.unit}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right text-gray-300 align-top">
-                                                            ${item.unitPrice.toFixed(2)}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right font-medium text-gray-200 align-top">
-                                                            ${item.total.toFixed(2)}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                                <tr className="bg-slate-800/80 font-semibold text-gray-100">
-                                                    <td colSpan="5" className="px-4 py-3 text-right">Grand Total</td>
-                                                    <td className="px-4 py-3 text-right text-lg">
-                                                        ${claim.lineItems.reduce((acc, item) => acc + item.total, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                {/* Approval Actions (Top Right) */}
+                <div className="lg:col-span-1">
+                    {canApprove && (
+                        <ApprovalActions
+                            claim={claim}
+                            id={id}
+                            user={user}
+                            onStatusUpdate={(updates) => setClaim(prev => ({ ...prev, ...updates }))}
+                        />
                     )}
-                    <div className="card">
+                </div>
+
+                {/* Comments (Bottom Left) */}
+                <div className="lg:col-span-2">
+                    <CommentsSection
+                        claimId={id}
+                        comments={comments}
+                        user={user}
+                    />
+                </div>
+
+                {/* Attachments (Bottom Right) */}
+                <div className="lg:col-span-1">
+                    <div className="card h-full">
                         <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
                             <ImageIcon size={20} />
                             Attachments ({claim.attachments.length})
                         </h2>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {claim.attachments.map((attachment, index) => (
+                        <div className="grid grid-cols-2 gap-4">
+                            {claim.attachments.slice(0, 4).map((attachment, index) => (
                                 <div
                                     key={index}
-                                    className="relative group cursor-pointer"
+                                    className="relative group cursor-pointer aspect-square"
                                     onClick={() => setSelectedImage(attachment)}
                                 >
                                     <img
                                         src={typeof attachment === 'string' ? attachment : attachment.url}
                                         alt={`Attachment ${index + 1}`}
-                                        className="w-full h-48 object-cover rounded-lg"
+                                        className="w-full h-full object-cover rounded-lg"
                                     />
                                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all rounded-lg flex items-center justify-center">
-                                        <p className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
-                                            View Image
-                                        </p>
+                                        <Eye className="text-white opacity-0 group-hover:opacity-100" size={24} />
                                     </div>
                                 </div>
                             ))}
+                            {claim.attachments.length > 4 && (
+                                <button
+                                    className="col-span-2 text-sm text-blue-400 hover:text-blue-300 mt-2 hover:underline"
+                                    onClick={() => setSelectedImage(claim.attachments[0])}
+                                >
+                                    View all {claim.attachments.length} attachments
+                                </button>
+                            )}
                         </div>
-                    </div>
-
-                    {/* Comments */}
-                    <div className="card">
-                        <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                            <MessageSquare size={20} />
-                            Comments ({comments.length})
-                        </h2>
-
-                        <div className="space-y-4 mb-6">
-                            {comments.map((comment) => (
-                                <div key={comment.id} className="bg-slate-800/50 rounded-lg p-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <p className="font-medium text-gray-100">User {comment.userId?.substring(0, 8)}</p>
-                                        <p className="text-sm text-gray-500">
-                                            {new Date(comment.createdAt).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                    <p className="text-gray-300">{comment.text}</p>
-                                </div>
-                            ))}
-                        </div>
-
-                        <form onSubmit={handleAddComment} className="space-y-3">
-                            <textarea
-                                value={comment}
-                                onChange={(e) => setComment(e.target.value)}
-                                placeholder="Add a comment..."
-                                rows={3}
-                                className="input resize-none"
-                            />
-                            <button type="submit" className="btn btn-primary flex items-center gap-2">
-                                <Send size={18} />
-                                Add Comment
-                            </button>
-                        </form>
                     </div>
                 </div>
-
-                {/* Approval Panel */}
-                {canApprove && (
-                    <div className="lg:col-span-1">
-                        <div className="card sticky top-24">
-                            <h2 className="text-xl font-semibold text-gray-100 mb-4">Approval Actions</h2>
-
-                            {claim.status === 'pending_review' || claim.status === 'under_review' ? (
-                                <div className="space-y-3">
-                                    <button
-                                        onClick={handleApprove}
-                                        className="btn btn-success w-full flex items-center justify-center gap-2"
-                                    >
-                                        <CheckCircle size={20} />
-                                        Approve Claim
-                                    </button>
-                                    <button
-                                        onClick={handleReject}
-                                        className="btn btn-danger w-full flex items-center justify-center gap-2"
-                                    >
-                                        <XCircle size={20} />
-                                        Reject Claim
-                                    </button>
-                                </div>
-                            ) : claim.status === 'approved' ? (
-                                <div className="space-y-3">
-                                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-center">
-                                        <CheckCircle className="text-green-400 mx-auto mb-2" size={24} />
-                                        <p className="text-sm font-medium text-green-800">Claim Approved</p>
-                                    </div>
-                                    <button
-                                        onClick={handleSubmitToInsurance}
-                                        className="btn btn-primary w-full flex items-center justify-center gap-2"
-                                    >
-                                        <Send size={20} />
-                                        Submit to Insurance
-                                    </button>
-                                </div>
-                            ) : claim.status === 'sent_to_insurance' ? (
-                                <div className="p-3 bg-indigo-500/10 border border-indigo-500/50 rounded-lg text-center">
-                                    <Send className="text-indigo-600 mx-auto mb-2" size={24} />
-                                    <p className="text-sm font-medium text-indigo-300">Submitted</p>
-                                    <p className="text-xs text-indigo-600 mt-1">
-                                        {new Date(claim.insuranceSubmittedAt).toLocaleDateString()}
-                                    </p>
-                                </div>
-                            ) : claim.status === 'rejected' ? (
-                                <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-center">
-                                    <XCircle className="text-red-600 mx-auto mb-2" size={24} />
-                                    <p className="text-sm font-medium text-red-800">Claim Rejected</p>
-                                </div>
-                            ) : null}
-                        </div>
-                    </div>
-                )}
             </div>
 
-            {/* Image Lightbox */}
-            {selectedImage && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
-                    onClick={() => setSelectedImage(null)}
-                >
-                    <div className="max-w-4xl w-full">
-                        <img
-                            src={typeof selectedImage === 'string' ? selectedImage : selectedImage.url}
-                            alt="Claim attachment"
-                            className="w-full h-auto rounded-lg"
-                        />
-                        <p className="text-white text-center mt-4">Claim Attachment</p>
-                    </div>
+            {/* Full Width Estimate Table */}
+            {(claim.aiAnalysis || claim.lineItems?.length > 0) && (
+                <div className="card space-y-6">
+                    <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
+                        <ClipboardList size={20} />
+                        Damage Assessment & Estimate
+                    </h2>
+
+                    {/* AI Analysis */}
+                    {claim.aiAnalysis && (
+                        <div className="bg-slate-800/50 rounded-lg p-4 space-y-4">
+                            <div className="flex items-start justify-between">
+                                <h3 className="font-medium text-gray-100 flex items-center gap-2">
+                                    <FileText size={18} className="text-blue-400" />
+                                    AI Restoration Analysis
+                                </h3>
+                                <div className="flex items-center gap-1 text-sm bg-blue-500/20 text-blue-300 px-2 py-1 rounded">
+                                    <span>Confidence:</span>
+                                    <span className="font-semibold">{Math.round(claim.aiAnalysis.confidenceScore * 100)}%</span>
+                                </div>
+                            </div>
+
+                            <p className="text-gray-300 text-sm leading-relaxed">
+                                {claim.aiAnalysis.summary}
+                            </p>
+
+                            {claim.aiAnalysis.restorationInstructions?.length > 0 && (
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium text-gray-400">Suggested Actions:</p>
+                                    <ul className="space-y-1">
+                                        {claim.aiAnalysis.restorationInstructions.map((instruction, idx) => (
+                                            <li key={idx} className="flex items-start gap-2 text-sm text-gray-300">
+                                                <CheckCircle2 size={16} className="text-green-500 mt-0.5 shrink-0" />
+                                                {instruction}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Line Items Table */}
+                    {claim.lineItems?.length > 0 && (
+                        <div>
+                            <div className="font-medium text-gray-100 mb-4 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <DollarSign size={18} className="text-green-400" />
+                                    Estimate Line Items
+                                </div>
+                                <button
+                                    onClick={handleAddItem}
+                                    className="btn btn-sm btn-primary flex items-center gap-1 text-xs"
+                                >
+                                    <Plus size={14} />
+                                    Add Item
+                                </button>
+                            </div>
+
+                            {/* Grouping Toggle */}
+                            <div className="flex items-center gap-2 mb-4 bg-slate-800/50 p-1 rounded-lg w-fit">
+                                <button
+                                    onClick={() => setGroupBy('category')}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${groupBy === 'category'
+                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        : 'text-gray-400 hover:text-gray-200 hover:bg-slate-700'
+                                        }`}
+                                >
+                                    Standard View
+                                </button>
+                                <button
+                                    onClick={() => setGroupBy('room')}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${groupBy === 'room'
+                                        ? 'bg-blue-600 text-white shadow-sm'
+                                        : 'text-gray-400 hover:text-gray-200 hover:bg-slate-700'
+                                        }`}
+                                >
+                                    By Room
+                                </button>
+                            </div>
+
+                            {(() => {
+                                // Prepare items with their original index
+                                const itemsWithIndex = claim.lineItems.map((item, index) => ({ ...item, originalIndex: index }));
+
+                                if (groupBy === 'room') {
+                                    // Group items
+                                    const groups = itemsWithIndex.reduce((acc, item) => {
+                                        const room = item.room || 'Unassigned';
+                                        if (!acc[room]) acc[room] = [];
+                                        acc[room].push(item);
+                                        return acc;
+                                    }, {});
+
+                                    const sortedRooms = Object.keys(groups).sort((a, b) => {
+                                        if (a === 'Unassigned') return 1;
+                                        if (b === 'Unassigned') return -1;
+                                        return a.localeCompare(b);
+                                    });
+
+                                    return (
+                                        <div className="space-y-8">
+                                            {sortedRooms.map(room => {
+                                                const items = groups[room];
+                                                const roomTotal = items.reduce((acc, item) => acc + item.total, 0);
+
+                                                return (
+                                                    <div key={room} className="bg-slate-800/30 rounded-xl overflow-hidden border border-slate-700/50">
+                                                        <div className="bg-slate-800/80 px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+                                                            <h4 className="font-semibold text-gray-100 flex items-center gap-2 uppercase tracking-wide text-xs">
+                                                                <MapPin size={14} className="text-blue-400" />
+                                                                {room}
+                                                            </h4>
+                                                            <div className="text-sm font-medium text-gray-300">
+                                                                Subtotal: <span className="text-green-400 ml-1">${roomTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="overflow-x-auto">
+                                                            <table className="w-full text-sm text-left">
+                                                                <thead className="bg-slate-900/50 text-gray-400 uppercase text-xs">
+                                                                    <tr>
+                                                                        <th className="px-4 py-3 whitespace-nowrap">Category</th>
+                                                                        <th className="px-4 py-3 w-1/2 min-w-[300px]">Description & Context</th>
+                                                                        <th className="px-4 py-3 whitespace-nowrap">Evidence</th>
+                                                                        <th className="px-4 py-3 text-right whitespace-nowrap">Qty</th>
+                                                                        <th className="px-4 py-3 text-right whitespace-nowrap">Unit Price</th>
+                                                                        <th className="px-4 py-3 text-right whitespace-nowrap">Total</th>
+                                                                        <th className="px-4 py-3 text-center whitespace-nowrap w-24">Actions</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-slate-700/50">
+                                                                    {items.map(item => (
+                                                                        <LineItemRow
+                                                                            key={item.originalIndex}
+                                                                            item={item}
+                                                                            idx={item.originalIndex}
+                                                                            editingItemIndex={editingItemIndex}
+                                                                            editedItemData={editedItemData}
+                                                                            setEditedItemData={setEditedItemData}
+                                                                            handleEditItem={handleEditItem}
+                                                                            handleDeleteItem={handleDeleteItem}
+                                                                            handleSaveItem={handleSaveItem}
+                                                                            handleCancelEdit={handleCancelEdit}
+                                                                            setSelectedImage={setSelectedImage}
+                                                                            claim={claim}
+                                                                            groupBy={groupBy}
+                                                                        />
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {/* Grand Total Footer for Room View */}
+                                            <div className="flex justify-end items-center gap-4 bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+                                                <span className="text-gray-400 text-sm uppercase tracking-wider font-semibold">Grand Total</span>
+                                                <span className="text-2xl font-bold text-green-400">
+                                                    ${claim.lineItems.reduce((acc, item) => acc + item.total, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                } else {
+                                    // STANDARD VIEW
+                                    return (
+                                        <div className="overflow-x-auto bg-slate-800/30 rounded-xl border border-slate-700/50">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="bg-slate-800 text-gray-400 uppercase text-xs">
+                                                    <tr>
+                                                        <th className="px-4 py-3 rounded-tl-lg whitespace-nowrap">Category</th>
+                                                        <th className="px-4 py-3 w-1/2 min-w-[300px]">Description & Context</th>
+                                                        <th className="px-4 py-3 whitespace-nowrap">Evidence</th>
+                                                        <th className="px-4 py-3 text-right whitespace-nowrap">Qty</th>
+                                                        <th className="px-4 py-3 text-right whitespace-nowrap">Unit Price</th>
+                                                        <th className="px-4 py-3 text-right whitespace-nowrap">Total</th>
+                                                        <th className="px-4 py-3 rounded-tr-lg text-center whitespace-nowrap w-24">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-700">
+                                                    {itemsWithIndex.map(item => (
+                                                        <LineItemRow
+                                                            key={item.originalIndex}
+                                                            item={item}
+                                                            idx={item.originalIndex}
+                                                            editingItemIndex={editingItemIndex}
+                                                            editedItemData={editedItemData}
+                                                            setEditedItemData={setEditedItemData}
+                                                            handleEditItem={handleEditItem}
+                                                            handleDeleteItem={handleDeleteItem}
+                                                            handleSaveItem={handleSaveItem}
+                                                            handleCancelEdit={handleCancelEdit}
+                                                            setSelectedImage={setSelectedImage}
+                                                            claim={claim}
+                                                            groupBy={groupBy}
+                                                        />
+                                                    ))}
+                                                    <tr className="bg-slate-800/80 font-semibold text-gray-100">
+                                                        <td colSpan="6" className="px-4 py-3 text-right">Grand Total</td>
+                                                        <td className="px-4 py-3 text-right text-lg">
+                                                            ${claim.lineItems.reduce((acc, item) => acc + item.total, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </td>
+                                                        <td></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    );
+                                }
+                            })()}
+                        </div>
+                    )}
                 </div>
             )}
+
+
+
+            {/* Image Lightbox */}
+            {/* Image Lightbox with Navigation */}
+            {
+                selectedImage && (
+                    <div
+                        className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center p-4"
+                        onClick={() => setSelectedImage(null)}
+                    >
+                        <button
+                            className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 p-2"
+                            onClick={() => setSelectedImage(null)}
+                        >
+                            <X size={32} />
+                        </button>
+
+                        <div
+                            className="max-w-6xl w-full h-full flex items-center justify-center relative"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Prev Button */}
+                            <button
+                                className="absolute left-0 p-4 text-white hover:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const currentIndex = claim.attachments.findIndex(a => (a.id || a) === (selectedImage.id || selectedImage));
+                                    if (currentIndex > 0) setSelectedImage(claim.attachments[currentIndex - 1]);
+                                }}
+                                disabled={!claim.attachments || claim.attachments.indexOf(selectedImage) === 0}
+                            >
+                                <ArrowLeft size={32} />
+                            </button>
+
+                            <div className="max-h-[85vh] max-w-[85%] flex flex-col items-center">
+                                <img
+                                    src={typeof selectedImage === 'string' ? selectedImage : selectedImage.url}
+                                    alt="Claim attachment"
+                                    className="max-h-[80vh] w-auto object-contain rounded-lg shadow-2xl"
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = 'https://via.placeholder.com/800x600?text=Image+Load+Error';
+                                    }}
+                                />
+                                <p className="text-gray-300 text-center mt-4 font-medium flex items-center gap-2">
+                                    <ImageIcon size={16} />
+                                    {claim.attachments.findIndex(a => (a.id || a) === (selectedImage.id || selectedImage)) + 1} of {claim.attachments.length}
+                                </p>
+                            </div>
+
+                            {/* Next Button */}
+                            <button
+                                className="absolute right-0 p-4 text-white hover:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const currentIndex = claim.attachments.findIndex(a => (a.id || a) === (selectedImage.id || selectedImage));
+                                    if (currentIndex < claim.attachments.length - 1) setSelectedImage(claim.attachments[currentIndex + 1]);
+                                }}
+                                disabled={!claim.attachments || claim.attachments.indexOf(selectedImage) === claim.attachments.length - 1}
+                            >
+                                {/* Re-using ArrowLeft flipped for consistency as ArrowRight import might be missing, checking imports... ArrowRight is NOT imported. Using inline SVG or just ArrowLeft with rotate. */}
+                                <ArrowLeft size={32} className="rotate-180" />
+                            </button>
+                        </div>
+                    </div>
+                )
+            }
         </div>
     );
 }

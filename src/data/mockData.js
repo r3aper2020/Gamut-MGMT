@@ -289,5 +289,6 @@ export const claimStatuses = {
     under_review: { label: 'Under Review', color: 'purple' },
     approved: { label: 'Approved', color: 'green' },
     rejected: { label: 'Rejected', color: 'red' },
+    revision_requested: { label: 'Revision Requested', color: 'yellow' }, // Using yellow/orange for revision
     sent_to_insurance: { label: 'Submitted', color: 'indigo' },
 };

@@ -1,24 +1,41 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { UserPlus } from 'lucide-react';
+import { signup } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { LogIn } from 'lucide-react';
 
-export default function LoginPage() {
+export default function SignupPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [displayName, setDisplayName] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
 
-        const result = await login(email, password);
-        if (result.success) {
-            navigate('/dashboard');
-        } else {
-            setError(result.error || 'Invalid email or password');
+        try {
+            await signup({ email, password, displayName });
+
+            // Auto-login after successful signup
+            const result = await login(email, password);
+
+            if (result.success) {
+                // Determine redirect based on role (handled by Layout/App routing usually, 
+                // but we can be explicit if needed. For now, go to root which triggers Layout checks).
+                navigate('/');
+            } else {
+                // Fallback if auto-login fails
+                navigate('/login');
+                alert("Account created! Please sign in.");
+            }
+        } catch (err) {
+            setError(err.message || 'Failed to create account');
+            setLoading(false); // Only stop loading on error, otherwise we are navigating
         }
     };
 
@@ -35,19 +52,34 @@ export default function LoginPage() {
                         <span className="text-3xl font-bold text-white">G</span>
                     </div>
                     <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent-400 mb-2">Gamut</h1>
-                    <p className="text-gray-400">AI-Powered Claims Management</p>
+                    <p className="text-gray-400">Join the Platform</p>
                 </div>
 
                 <div className="card border-slate-700">
-                    <h2 className="text-2xl font-bold text-gray-100 mb-6">Sign In</h2>
+                    <h2 className="text-2xl font-bold text-gray-100 mb-6">Sign Up</h2>
 
                     {error && (
-                        <div className="mb-4 p-3 bg-red-500/100/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
                             {error}
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
+                                Full Name
+                            </label>
+                            <input
+                                id="name"
+                                type="text"
+                                value={displayName}
+                                onChange={(e) => setDisplayName(e.target.value)}
+                                className="input"
+                                placeholder="John Doe"
+                                required
+                            />
+                        </div>
+
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
                                 Email
@@ -75,32 +107,33 @@ export default function LoginPage() {
                                 className="input"
                                 placeholder="••••••••"
                                 required
+                                minLength={6}
                             />
                         </div>
 
-                        <button type="submit" className="btn btn-primary w-full flex items-center justify-center gap-2">
-                            <LogIn size={20} />
-                            Sign In
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn btn-primary w-full flex items-center justify-center gap-2"
+                        >
+                            {loading ? (
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            ) : (
+                                <>
+                                    <UserPlus size={20} />
+                                    Create Account
+                                </>
+                            )}
                         </button>
                     </form>
 
                     <div className="mt-6 text-center">
                         <p className="text-sm text-gray-400">
-                            Don&apos;t have an account?{' '}
-                            <Link to="/signup" className="text-primary-400 hover:text-primary-300 font-medium">
-                                Sign Up (Public Beta)
+                            Already have an account?{' '}
+                            <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium">
+                                Sign In
                             </Link>
                         </p>
-                    </div>
-
-                    <div className="mt-6 p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
-                        <p className="text-xs font-medium text-gray-300 mb-2">Demo Credentials:</p>
-                        <div className="space-y-1 text-xs text-gray-400">
-                            <p><strong className="text-primary-400">Org Owner:</strong> owner@gamut.com / owner123 (All Teams)</p>
-                            <p><strong className="text-accent-400">Manager:</strong> manager1@gamut.com / manager123 (Team 1 Only)</p>
-                            <p><strong className="text-accent-400">Manager (Admin):</strong> manager2@gamut.com / manager123 (All Teams)</p>
-                            <p><strong className="text-gray-400">Member:</strong> member@gamut.com / member123 (Own Info)</p>
-                        </div>
                     </div>
                 </div>
             </div>

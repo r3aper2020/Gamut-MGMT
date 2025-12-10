@@ -9,6 +9,9 @@ import ClaimDetailPage from './pages/ClaimDetailPage';
 import TeamsPage from './pages/TeamsPage';
 import OrganizationPage from './pages/OrganizationPage';
 import FirestoreDebugPage from './pages/FirestoreDebugPage';
+import SignupPage from './pages/SignupPage';
+import OnboardingPage from './pages/OnboardingPage';
+import PendingPage from './pages/PendingPage';
 
 function App() {
   return (
@@ -16,6 +19,9 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/pending" element={<PendingPage />} />
           <Route path="/debug" element={<FirestoreDebugPage />} />
           <Route
             path="/"

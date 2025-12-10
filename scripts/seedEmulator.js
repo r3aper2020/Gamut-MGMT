@@ -9,7 +9,7 @@ import admin from 'firebase-admin';
 
 // Connect to emulators BEFORE initializing
 process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
-process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
+process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9100';
 
 // Initialize Firebase Admin SDK for emulator
 admin.initializeApp({
@@ -25,6 +25,9 @@ console.log('🔥 Connected to Firebase Emulators (Admin SDK)');
 const organization = {
     id: 'org1',
     name: 'Restoration Pro Services',
+    address: '456 Restore Way, Springfield, IL',
+    industry: 'Restoration',
+    size: '11-50',
     createdAt: admin.firestore.Timestamp.now(),
     settings: {
         currency: 'USD',
@@ -45,41 +48,52 @@ const users = [
         id: 'user1',
         email: 'owner@gamut.com',
         password: 'owner123',
-        name: 'Sarah Johnson',
+        displayName: 'Sarah Johnson',
         role: 'org_owner',
         organizationId: 'org1',
-        teamId: null,
-        hasAdminRights: true,
+        jobTitle: 'CEO',
+        phoneNumber: '555-0101',
+        createdAt: admin.firestore.Timestamp.now(),
+        updatedAt: admin.firestore.Timestamp.now(),
     },
     {
         id: 'user2',
         email: 'manager1@gamut.com',
         password: 'manager123',
-        name: 'Mike Chen',
+        displayName: 'Mike Chen',
         role: 'manager',
         organizationId: 'org1',
         teamId: 'team1',
-        hasAdminRights: false,
+        jobTitle: 'Operations Manager',
+        phoneNumber: '555-0102',
+        createdAt: admin.firestore.Timestamp.now(),
+        updatedAt: admin.firestore.Timestamp.now(),
     },
     {
         id: 'user3',
         email: 'manager2@gamut.com',
         password: 'manager123',
-        name: 'Lisa Rodriguez',
+        displayName: 'Lisa Rodriguez',
         role: 'manager',
         organizationId: 'org1',
         teamId: 'team2',
-        hasAdminRights: true,
+        jobTitle: 'Branch Manager',
+        phoneNumber: '555-0103',
+        createdAt: admin.firestore.Timestamp.now(),
+        updatedAt: admin.firestore.Timestamp.now(),
     },
     {
         id: 'user4',
         email: 'member@gamut.com',
         password: 'member123',
-        name: 'Alex Rivera',
+        displayName: 'Alex Rivera',
         role: 'team_member',
         organizationId: 'org1',
         teamId: 'team1',
-        hasAdminRights: false,
+        jobTitle: 'Technician',
+        phoneNumber: '555-0104',
+        createdAt: admin.firestore.Timestamp.now(),
+        updatedAt: admin.firestore.Timestamp.now(),
     },
 ];
 
@@ -97,8 +111,15 @@ const claims = [
         updatedAt: admin.firestore.Timestamp.fromDate(new Date('2024-01-15')),
         propertyType: 'Residential',
         attachments: [
-            { id: 'att1', url: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800', type: 'image' },
-            { id: 'att2', url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800', type: 'image' },
+            { id: 'att1', url: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800', type: 'image', room: 'Kitchen' },
+            { id: 'att2', url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800', type: 'image', room: 'Kitchen' },
+            { id: 'att3', url: 'https://images.unsplash.com/photo-1621905251189-08b95ddd71a9?w=800', type: 'image', room: 'Living Room' },
+            { id: 'att4', url: 'https://images.unsplash.com/photo-1527011046414-4781f1f94f8c?w=800', type: 'image', room: 'Master Bedroom' },
+            { id: 'att5', url: 'https://images.unsplash.com/photo-1574739596952-b4306c4b277b?w=800', type: 'image', room: 'Kitchen' },
+            { id: 'att6', url: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=800', type: 'image', room: 'Living Room' },
+            { id: 'att7', url: 'https://images.unsplash.com/photo-1621905252870-983f4b6a9876?w=800', type: 'image', room: 'Master Bedroom' },
+            { id: 'att8', url: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=800', type: 'image', room: 'Guest Bedroom' },
+            { id: 'att9', url: 'https://images.unsplash.com/photo-1517646287270-a5a9ca602e5c?w=800', type: 'image', room: 'Exterior' },
         ],
         metadata: {
             address: '123 Main St, Springfield',
@@ -124,8 +145,9 @@ const claims = [
                 unitPrice: 1.25,
                 total: 312.50,
                 aiReasoning: 'Standing water detected in kitchen area affecting approx 250 sqft.',
-                linkedPhotoIds: ['att1'],
-                referenceSource: { code: 'IICRC S500', standard: 'Category 1 Water', description: 'Clean water source' }
+                linkedPhotoIds: ['att1', 'att2', 'att3', 'att4', 'att5', 'att6', 'att7', 'att8', 'att9'],
+                referenceSource: { code: 'IICRC S500', standard: 'Category 1 Water', description: 'Clean water source' },
+                room: 'Kitchen'
             },
             {
                 category: 'Mitigation',
@@ -136,7 +158,8 @@ const claims = [
                 total: 255.00,
                 aiReasoning: 'Required for 3-day drying cycle based on saturation levels > 40%.',
                 linkedPhotoIds: ['att1', 'att2'],
-                referenceSource: { code: 'IICRC S500', standard: 'Class 2 Loss', description: 'Significant water absorption' }
+                referenceSource: { code: 'IICRC S500', standard: 'Class 2 Loss', description: 'Significant water absorption' },
+                room: 'Kitchen'
             },
             {
                 category: 'Demolition',
@@ -147,7 +170,8 @@ const claims = [
                 total: 33.75,
                 aiReasoning: 'Baseboards swollen and detached due to water wicking.',
                 linkedPhotoIds: ['att2'],
-                referenceSource: { code: 'IICRC S500', standard: 'Structural Drying', description: 'Remove base to access wall cavity' }
+                referenceSource: { code: 'IICRC S500', standard: 'Structural Drying', description: 'Remove base to access wall cavity' },
+                room: 'Living Room'
             },
             {
                 category: 'Demolition',
@@ -160,12 +184,13 @@ const claims = [
                 linkedPhotoIds: ['att1'],
                 needsClarification: true,
                 userFullfilled: true,
-                clarificationNote: 'AI requested cabinet type. User selected: Standard Grade.'
+                clarificationNote: 'AI requested cabinet type. User selected: Standard Grade.',
+                room: 'Kitchen'
             },
-            { category: 'Repairs', description: 'Replace Drywall (4ft flood cut)', quantity: 180, unit: 'SF', unitPrice: 2.50, total: 450.00, aiReasoning: 'Standard 4ft flood cut required to access wet insulation.' },
-            { category: 'Repairs', description: 'Paint - Walls', quantity: 350, unit: 'SF', unitPrice: 1.10, total: 385.00, aiReasoning: 'Painting required for new and existing drywall to match.' },
-            { category: 'Repairs', description: 'Replace Laminate Flooring', quantity: 250, unit: 'SF', unitPrice: 4.50, total: 1125.00, aiReasoning: 'Laminate flooring is non-salvageable (Category 1 water).' },
-            { category: 'General', description: 'Dumpster Rental', quantity: 1, unit: 'EA', unitPrice: 450.00, total: 450.00, aiReasoning: 'Disposal of wet drywall, flooring, and cabinetry.' }
+            { category: 'Repairs', description: 'Replace Drywall (4ft flood cut)', quantity: 180, unit: 'SF', unitPrice: 2.50, total: 450.00, aiReasoning: 'Standard 4ft flood cut required to access wet insulation.', room: 'Living Room' },
+            { category: 'Repairs', description: 'Paint - Walls', quantity: 350, unit: 'SF', unitPrice: 1.10, total: 385.00, aiReasoning: 'Painting required for new and existing drywall to match.', room: 'Living Room' },
+            { category: 'Repairs', description: 'Replace Laminate Flooring', quantity: 250, unit: 'SF', unitPrice: 4.50, total: 1125.00, aiReasoning: 'Laminate flooring is non-salvageable (Category 1 water).', room: 'Master Bedroom' },
+            { category: 'General', description: 'Dumpster Rental', quantity: 1, unit: 'EA', unitPrice: 450.00, total: 450.00, aiReasoning: 'Disposal of wet drywall, flooring, and cabinetry.', room: 'Exterior' }
         ]
     },
     {
@@ -428,37 +453,70 @@ async function seedData() {
         // Create users in Auth and Firestore
         console.log('\n👥 Creating users...');
         for (const user of users) {
+            let firebaseUid;
             try {
                 // Create auth user with Admin SDK
                 const userRecord = await auth.createUser({
                     email: user.email,
                     password: user.password,
-                    displayName: user.name,
+                    displayName: user.displayName,
                 });
-                const firebaseUid = userRecord.uid;
+                firebaseUid = userRecord.uid;
                 console.log(`  ✓ Created auth user: ${user.email}`);
 
-                // Store mapping from old ID to Firebase UID
-                userIdMap[user.id] = firebaseUid;
+                // Set user role to ensure custom claims are consistent
+                if (user.role) {
+                    await auth.setCustomUserClaims(firebaseUid, { role: user.role, organizationId: user.organizationId });
+                    console.log(`    ✓ Set custom claims for ${user.email}`);
+                }
 
-                // Create user document (without password)
-                const { password, id, ...userData } = user;
-                await db.collection('users').doc(firebaseUid).set({
-                    ...userData,
-                });
-                console.log(`  ✓ Created user document: ${user.name}`);
             } catch (error) {
                 if (error.code === 'auth/email-already-exists') {
                     console.log(`  ⚠ User already exists: ${user.email}`);
+                    // Fetch existing user to get UID
+                    try {
+                        const existingUser = await auth.getUserByEmail(user.email);
+                        firebaseUid = existingUser.uid;
+                        console.log(`    ✓ Found UID for ${user.email}: ${firebaseUid}`);
+
+                        // Update claims even if user exists
+                        if (user.role) {
+                            await auth.setCustomUserClaims(firebaseUid, { role: user.role, organizationId: user.organizationId });
+                        }
+
+                    } catch (fetchError) {
+                        console.error(`  ✗ Error fetching existing user ${user.email}:`, fetchError.message);
+                        continue; // Skip this user if we can't find them
+                    }
+
                 } else {
                     console.error(`  ✗ Error creating user ${user.email}:`, error.message);
+                    continue; // Skip if creation failed for other reasons
                 }
+            }
+
+            if (firebaseUid) {
+                // Store mapping from old ID to Firebase UID
+                userIdMap[user.id] = firebaseUid;
+
+                // Create or Update user document (without password)
+                const { password, id, ...userData } = user;
+                await db.collection('users').doc(firebaseUid).set({
+                    ...userData,
+                }, { merge: true });
+                console.log(`  ✓ Updated user document: ${user.displayName}`);
             }
         }
 
         // Create organization
         console.log('\n🏢 Creating organization...');
-        await db.collection('organizations').doc(organization.id).set(organization);
+        const { id, ...orgFields } = organization;
+        const orgData = {
+            ...orgFields,
+            ownerId: userIdMap['user1'] || 'user1', // Use mapped UID for owner
+            updatedAt: admin.firestore.Timestamp.now(),
+        };
+        await db.collection('organizations').doc(id).set(orgData);
         console.log(`  ✓ Created: ${organization.name}`);
 
         // Create teams
@@ -473,6 +531,7 @@ async function seedData() {
         for (const claim of claims) {
             const claimData = {
                 ...claim,
+                organizationId: 'org1', // Explicitly set organizationId for isolation
                 submittedBy: userIdMap[claim.submittedBy] || claim.submittedBy,
             };
             // Also update metadata if it has user references

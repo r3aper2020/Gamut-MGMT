@@ -1,11 +1,12 @@
 import { FileText, Clock, CheckCircle, XCircle, TrendingUp, Users } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import ClaimStatusBadge from '../components/ClaimStatusBadge';
+import AdminUserManagement from '../components/AdminUserManagement';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreClaims, useFirestoreTeams } from '../hooks/useFirestore';
 
 export default function DashboardPage() {
-    const { user } = useAuth();
+    const { user, hasAdminRights, isOrgOwner } = useAuth();
     const { claims: visibleClaims, loading: claimsLoading } = useFirestoreClaims(user);
     const { teams: visibleTeams, loading: teamsLoading } = useFirestoreTeams(user);
 
@@ -163,6 +164,13 @@ export default function DashboardPage() {
                     ))}
                 </div>
             </div>
+
+            {/* Admin User Management */}
+            {(hasAdminRights || isOrgOwner) && (
+                <div className="card">
+                    <AdminUserManagement />
+                </div>
+            )}
         </div>
     );
 }

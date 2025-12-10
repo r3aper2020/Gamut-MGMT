@@ -2,7 +2,7 @@
 import admin from 'firebase-admin';
 
 process.env.FIRESTORE_EMULATOR_HOST = 'localhost:8080';
-process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
+process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9100';
 
 admin.initializeApp({
     projectId: 'demo-gamut-claims',

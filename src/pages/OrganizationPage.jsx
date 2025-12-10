@@ -1,11 +1,27 @@
-import { mockOrganization, mockTeams, mockClaims } from '../data/mockData';
 import { Building2, Users, FileText, TrendingUp, Calendar } from 'lucide-react';
+import { useOrganization } from '../hooks/useOrganization';
+import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 export default function OrganizationPage() {
-    const totalTeams = mockTeams.length;
-    const totalMembers = mockTeams.reduce((sum, team) => sum + team.memberCount, 0);
-    const totalClaims = mockClaims.length;
-    const totalAmount = mockClaims.reduce((sum, c) => sum + c.amount, 0);
+    const { organization, loading: orgLoading } = useOrganization();
+
+    // We can fetch real stats later, for now mock stats or use zeros
+    const totalTeams = 0;
+    const totalMembers = 0;
+    const totalClaims = 0;
+    const totalAmount = 0;
+
+    if (orgLoading) return <div>Loading...</div>;
+
+    if (!organization) {
+        return (
+            <div className="p-8 text-center">
+                <h2 className="text-2xl font-bold mb-4">No Organization Found</h2>
+                <Link to="/onboarding" className="btn btn-primary">Setup Organization</Link>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -21,8 +37,8 @@ export default function OrganizationPage() {
                         <Building2 size={32} />
                     </div>
                     <div>
-                        <h2 className="text-3xl font-bold">{mockOrganization.name}</h2>
-                        <p className="text-primary-100">Restoration Services Company</p>
+                        <h2 className="text-3xl font-bold">{organization.name}</h2>
+                        <p className="text-primary-100">Organization ID: {organization.id}</p>
                     </div>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -52,24 +68,24 @@ export default function OrganizationPage() {
                     <div className="space-y-3">
                         <div className="flex items-center justify-between py-2 border-b border-slate-700">
                             <span className="text-gray-400">Organization ID</span>
-                            <span className="font-medium text-gray-100">{mockOrganization.id}</span>
+                            <span className="font-medium text-gray-100 font-mono text-xs">{organization.id}</span>
                         </div>
                         <div className="flex items-center justify-between py-2 border-b border-slate-700">
                             <span className="text-gray-400">Name</span>
-                            <span className="font-medium text-gray-100">{mockOrganization.name}</span>
+                            <span className="font-medium text-gray-100">{organization.name}</span>
                         </div>
                         <div className="flex items-center justify-between py-2 border-b border-slate-700">
                             <span className="text-gray-400">Timezone</span>
-                            <span className="font-medium text-gray-100">{mockOrganization.settings.timezone}</span>
+                            <span className="font-medium text-gray-100">{organization.settings?.timezone || 'N/A'}</span>
                         </div>
                         <div className="flex items-center justify-between py-2 border-b border-slate-700">
                             <span className="text-gray-400">Currency</span>
-                            <span className="font-medium text-gray-100">{mockOrganization.settings.currency}</span>
+                            <span className="font-medium text-gray-100">{organization.settings?.currency || 'USD'}</span>
                         </div>
                         <div className="flex items-center justify-between py-2">
                             <span className="text-gray-400">Created</span>
                             <span className="font-medium text-gray-100">
-                                {new Date(mockOrganization.createdAt).toLocaleDateString()}
+                                {organization.createdAt ? new Date(organization.createdAt).toLocaleDateString() : 'N/A'}
                             </span>
                         </div>
                     </div>
@@ -115,23 +131,8 @@ export default function OrganizationPage() {
             <div className="card">
                 <h3 className="text-lg font-semibold text-gray-100 mb-4">Teams Overview</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {mockTeams.map((team) => (
-                        <div key={team.id} className="p-4 bg-slate-800/50 rounded-lg hover:bg-slate-800 transition-colors">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="bg-primary-100 p-2 rounded-lg">
-                                    <Users className="text-primary-600" size={16} />
-                                </div>
-                                <div>
-                                    <p className="font-medium text-gray-100">{team.name}</p>
-                                    <p className="text-xs text-gray-500">{team.specialty}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-400">Members</span>
-                                <span className="font-semibold text-gray-100">{team.memberCount}</span>
-                            </div>
-                        </div>
-                    ))}
+                    {/* Teams list would go here - removing mocks for now */}
+                    <p className="text-gray-400 col-span-full text-center py-4">Teams functionality coming soon.</p>
                 </div>
             </div>
         </div>

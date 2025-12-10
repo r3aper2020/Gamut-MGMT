@@ -1,9 +1,9 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LayoutDashboard, FileText, Users, Building2, LogOut } from 'lucide-react';
 
 export default function Layout({ children }) {
-    const { user, logout } = useAuth();
+    const { user, logout, loading } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -17,6 +17,28 @@ export default function Layout({ children }) {
         { to: '/teams', icon: Users, label: 'Teams' },
         { to: '/organization', icon: Building2, label: 'Organization' },
     ];
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-slate-950">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return <Navigate to="/login" />;
+    }
+
+    // Redirect Org Owner to Onboarding if no organizationId
+    if (user.role === 'org_owner' && !user.organizationId) {
+        return <Navigate to="/onboarding" />;
+    }
+
+    // Redirect Pending users
+    if (user.role === 'pending') {
+        return <Navigate to="/pending" />;
+    }
 
     return (
         <div className="min-h-screen bg-slate-950">
