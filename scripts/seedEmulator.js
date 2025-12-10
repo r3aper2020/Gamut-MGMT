@@ -97,13 +97,76 @@ const claims = [
         updatedAt: admin.firestore.Timestamp.fromDate(new Date('2024-01-15')),
         propertyType: 'Residential',
         attachments: [
-            'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800',
-            'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800',
+            { id: 'att1', url: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800', type: 'image' },
+            { id: 'att2', url: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800', type: 'image' },
         ],
         metadata: {
             address: '123 Main St, Springfield',
             incidentDate: '2024-01-10',
-        }
+        },
+        aiAnalysis: {
+            summary: 'Severe water damage detected affecting cabinetry and flooring. High probability of subfloor saturation.',
+            restorationInstructions: [
+                'Shut off main water supply immediately.',
+                'Extract standing water from kitchen floor.',
+                'Remove baseboards and drill ventilation holes in drywall.',
+                'Dehumidify area for 48-72 hours.',
+                'Inspect subfloor for structural integrity.'
+            ],
+            confidenceScore: 0.92
+        },
+        lineItems: [
+            {
+                category: 'Mitigation',
+                description: 'Water Extraction (Cat 1)',
+                quantity: 250,
+                unit: 'SF',
+                unitPrice: 1.25,
+                total: 312.50,
+                aiReasoning: 'Standing water detected in kitchen area affecting approx 250 sqft.',
+                linkedPhotoIds: ['att1'],
+                referenceSource: { code: 'IICRC S500', standard: 'Category 1 Water', description: 'Clean water source' }
+            },
+            {
+                category: 'Mitigation',
+                description: 'Dehumidifier Rental (Large)',
+                quantity: 3,
+                unit: 'Day',
+                unitPrice: 85.00,
+                total: 255.00,
+                aiReasoning: 'Required for 3-day drying cycle based on saturation levels > 40%.',
+                linkedPhotoIds: ['att1', 'att2'],
+                referenceSource: { code: 'IICRC S500', standard: 'Class 2 Loss', description: 'Significant water absorption' }
+            },
+            {
+                category: 'Demolition',
+                description: 'Remove Baseboard',
+                quantity: 45,
+                unit: 'LF',
+                unitPrice: 0.75,
+                total: 33.75,
+                aiReasoning: 'Baseboards swollen and detached due to water wicking.',
+                linkedPhotoIds: ['att2'],
+                referenceSource: { code: 'IICRC S500', standard: 'Structural Drying', description: 'Remove base to access wall cavity' }
+            },
+            {
+                category: 'Demolition',
+                description: 'Remove Lower Cabinetry',
+                quantity: 12,
+                unit: 'LF',
+                unitPrice: 25.00,
+                total: 300.00,
+                aiReasoning: 'Moisture detected behind toe kicks; removal required for drying.',
+                linkedPhotoIds: ['att1'],
+                needsClarification: true,
+                userFullfilled: true,
+                clarificationNote: 'AI requested cabinet type. User selected: Standard Grade.'
+            },
+            { category: 'Repairs', description: 'Replace Drywall (4ft flood cut)', quantity: 180, unit: 'SF', unitPrice: 2.50, total: 450.00, aiReasoning: 'Standard 4ft flood cut required to access wet insulation.' },
+            { category: 'Repairs', description: 'Paint - Walls', quantity: 350, unit: 'SF', unitPrice: 1.10, total: 385.00, aiReasoning: 'Painting required for new and existing drywall to match.' },
+            { category: 'Repairs', description: 'Replace Laminate Flooring', quantity: 250, unit: 'SF', unitPrice: 4.50, total: 1125.00, aiReasoning: 'Laminate flooring is non-salvageable (Category 1 water).' },
+            { category: 'General', description: 'Dumpster Rental', quantity: 1, unit: 'EA', unitPrice: 450.00, total: 450.00, aiReasoning: 'Disposal of wet drywall, flooring, and cabinetry.' }
+        ]
     },
     {
         id: 'claim2',
@@ -118,14 +181,54 @@ const claims = [
         updatedAt: admin.firestore.Timestamp.fromDate(new Date('2024-01-14')),
         propertyType: 'Residential',
         attachments: [
-            'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?w=800',
+            { id: 'att3', url: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?w=800', type: 'image' },
         ],
         metadata: {
             address: '456 Oak Ave, Springfield',
             incidentDate: '2024-01-08',
             approvedBy: 'user1',
             approvedAt: '2024-01-14',
-        }
+        },
+        aiAnalysis: {
+            summary: 'Localized fire damage near electrical outlet. Heavy soot deposition on ceiling and upper walls.',
+            restorationInstructions: [
+                'Isolate affected circuit.',
+                'HEPA vacuum all surfaces to remove loose soot.',
+                'Chem sponge walls and ceiling.',
+                'Thermal fog for odor control.',
+                'Seal and paint affected surfaces.'
+            ],
+            confidenceScore: 0.88
+        },
+        lineItems: [
+            {
+                category: 'Cleaning',
+                description: 'HEPA Vacuuming - Heavy',
+                quantity: 450,
+                unit: 'SF',
+                unitPrice: 0.45,
+                total: 202.50,
+                aiReasoning: 'Heavy soot deposition visible on all horizontal surfaces.',
+                linkedPhotoIds: ['att3'],
+                referenceSource: { code: 'IICRC S520', standard: 'Soot Removal', description: 'HEPA sandwich method' }
+            },
+            { category: 'Cleaning', description: 'Chem Sponge Walls', quantity: 600, unit: 'SF', unitPrice: 0.55, total: 330.00, aiReasoning: 'Dry sponge cleaning required for non-oily soot residue.' },
+            {
+                category: 'Deodorization',
+                description: 'Thermal Fogging',
+                quantity: 1500,
+                unit: 'CF',
+                unitPrice: 0.15,
+                total: 225.00,
+                aiReasoning: 'Recommended for smoke odor neutralization in porous materials.',
+                linkedPhotoIds: ['att3'],
+                needsClarification: true,
+                userFullfilled: true,
+                clarificationNote: 'AI Prompt: Confirm area volume. User Confirmed: 1500 CF.'
+            },
+            { category: 'Repairs', description: 'Replace Electrical Outlet & Wiring', quantity: 1, unit: 'EA', unitPrice: 250.00, total: 250.00, aiReasoning: 'Source of fire; complete replacement required for safety.' },
+            { category: 'Repairs', description: 'Seal & Paint', quantity: 600, unit: 'SF', unitPrice: 1.85, total: 1110.00, aiReasoning: 'Encapsulation of smoke stains followed by finish coat.' }
+        ]
     },
     {
         id: 'claim3',
@@ -146,7 +249,27 @@ const claims = [
         metadata: {
             address: '789 Pine Rd, Springfield',
             incidentDate: '2024-01-05',
-        }
+        },
+        aiAnalysis: {
+            summary: 'Visible mold growth (approx 50sf) on basement drywall. High humidity levels detected.',
+            restorationInstructions: [
+                'Establish negative pressure containment.',
+                'Remove affected drywall (2ft past visible mold).',
+                'HEPA vacuum and wire brush stud framing.',
+                'Apply antimicrobial sealant.',
+                'Run scrubber for 72 hours.'
+            ],
+            confidenceScore: 0.95
+        },
+        lineItems: [
+            { category: 'Mitigation', description: 'Containment Barrier', quantity: 45, unit: 'LF', unitPrice: 12.50, total: 562.50, aiReasoning: 'Isolation of mold-affected area to prevent cross-contamination.' },
+            { category: 'Mitigation', description: 'Air Scrubber Rental', quantity: 3, unit: 'Day', unitPrice: 125.00, total: 375.00, aiReasoning: 'HEPA filtration required during remediation activities.' },
+            { category: 'Remediation', description: 'Remove Moldy Drywall (Bagged)', quantity: 200, unit: 'SF', unitPrice: 3.50, total: 700.00, aiReasoning: 'Visible fungal growth > 10sf requires controlled demolition.' },
+            { category: 'Remediation', description: 'HEPA Vacuum / Wire Brush Wood', quantity: 200, unit: 'SF', unitPrice: 2.75, total: 550.00, aiReasoning: 'Cleaning of structural framing after drywall removal.' },
+            { category: 'Remediation', description: 'Apply Antimicrobial Agent', quantity: 350, unit: 'SF', unitPrice: 0.85, total: 297.50, aiReasoning: 'Post-remediation treatment to inhibit future growth.' },
+            { category: 'Repairs', description: 'Install Drywall & Texture', quantity: 200, unit: 'SF', unitPrice: 3.25, total: 650.00, aiReasoning: 'Restoration of wall surfaces after clearance testing.' },
+            { category: 'Repairs', description: 'Paint Walls', quantity: 500, unit: 'SF', unitPrice: 1.10, total: 550.00, aiReasoning: 'Painting of new and existing walls for uniform appearance.' }
+        ]
     },
     {
         id: 'claim4',
@@ -169,7 +292,27 @@ const claims = [
             approvedBy: 'user1',
             approvedAt: '2024-01-14',
             sentToInsurance: '2024-01-16',
-        }
+        },
+        aiAnalysis: {
+            summary: 'Wind damage to asphalt shingles (approx 10-15% of roof area). Minor water intrusion in attic insulation.',
+            restorationInstructions: [
+                'Tarp roof immediately to prevent further ingress.',
+                'Remove damaged shingles and felt paper.',
+                'Inspect decking for rot.',
+                'Install new ice/water shield and matching shingles.',
+                'Replace wet attic insulation.'
+            ],
+            confidenceScore: 0.87
+        },
+        lineItems: [
+            { category: 'Emergency', description: 'Emergency Tarping', quantity: 1, unit: 'EA', unitPrice: 450.00, total: 450.00, aiReasoning: 'Immediate mitigation to prevent interior water damage.' },
+            { category: 'Roofing', description: 'Remove 3-Tab Shingles', quantity: 4, unit: 'SQ', unitPrice: 65.00, total: 260.00, aiReasoning: 'Removal of wind-damaged shingles.' },
+            { category: 'Roofing', description: 'Install 3-Tab Shingles', quantity: 4, unit: 'SQ', unitPrice: 210.00, total: 840.00, aiReasoning: 'Replacement with matching 3-tab shingles.' },
+            { category: 'Roofing', description: 'Ice & Water Shield', quantity: 150, unit: 'SF', unitPrice: 1.50, total: 225.00, aiReasoning: 'Code upgrade / best practice for valley protection.' },
+            { category: 'Interior', description: 'Remove Wet Insulation', quantity: 100, unit: 'SF', unitPrice: 1.25, total: 125.00, aiReasoning: 'Thermal imaging detected wet insulation in attic.' },
+            { category: 'Interior', description: 'Blown-in Insulation (R-30)', quantity: 100, unit: 'SF', unitPrice: 2.00, total: 200.00, aiReasoning: 'Restore R-value to current code.' },
+            { category: 'Interior', description: 'Spot Paint Ceiling', quantity: 1, unit: 'EA', unitPrice: 150.00, total: 150.00, aiReasoning: 'Cover water stain on bedroom ceiling.' }
+        ]
     },
     {
         id: 'claim5',
@@ -190,7 +333,24 @@ const claims = [
             rejectedBy: 'user2',
             rejectedAt: '2024-01-21',
             rejectionReason: 'Insufficient documentation provided. Please resubmit with detailed photos and cost breakdown.',
-        }
+        },
+        aiAnalysis: {
+            summary: 'Active leak from toilet supply line. Category 2 water affecting tile floor and adjacent dywall.',
+            restorationInstructions: [
+                'Extract standing water.',
+                'Detach and reset toilet.',
+                'Remove affected ceramic tile if subfloor is wet.',
+                'Dry-out with fans and dehumidifier.'
+            ],
+            confidenceScore: 0.85
+        },
+        lineItems: [
+            { category: 'Mitigation', description: 'Water Extraction (Cat 2)', quantity: 80, unit: 'SF', unitPrice: 1.45, total: 116.00, aiReasoning: 'Extraction of toilet supply water (Category 2).' },
+            { category: 'Plumbing', description: 'Detach & Reset Toilet', quantity: 1, unit: 'EA', unitPrice: 185.00, total: 185.00, aiReasoning: 'Required to access damaged flooring and baseboards.' },
+            { category: 'Demolition', description: 'Remove Ceramic Tile', quantity: 60, unit: 'SF', unitPrice: 3.50, total: 210.00, aiReasoning: 'Tiles delaminating due to subfloor saturation.' },
+            { category: 'Repairs', description: 'Install Ceramic Tile', quantity: 60, unit: 'SF', unitPrice: 12.00, total: 720.00, aiReasoning: 'Replace with like-kind quality tile.' },
+            { category: 'Repairs', description: 'Replace Baseboard', quantity: 25, unit: 'LF', unitPrice: 2.50, total: 62.50, aiReasoning: 'Swollen MDF baseboards require replacement.' }
+        ]
     },
     {
         id: 'claim6',
@@ -211,7 +371,26 @@ const claims = [
         metadata: {
             address: '100 Business Blvd, Springfield',
             incidentDate: '2024-01-15',
-        }
+        },
+        aiAnalysis: {
+            summary: 'Large commercial loss. Fire suppression system activation caused water damage throughout open office area.',
+            restorationInstructions: [
+                'Commercial water extraction.',
+                'Remove glue-down carpet.',
+                'Hydroxyl generator for odor.',
+                'Cleaning of all office furniture.',
+                'Commercial painting.'
+            ],
+            confidenceScore: 0.91
+        },
+        lineItems: [
+            { category: 'Mitigation', description: 'Commercial Water Extraction', quantity: 2500, unit: 'SF', unitPrice: 0.85, total: 2125.00, aiReasoning: 'Large scale extraction for open office area.' },
+            { category: 'Demolition', description: 'Remove Glue-Down Carpet', quantity: 2500, unit: 'SF', unitPrice: 0.95, total: 2375.00, aiReasoning: 'Glue-down carpet saturated; adhesive failure likely.' },
+            { category: 'Cleaning', description: 'Content Manipulation (Hourly)', quantity: 50, unit: 'HR', unitPrice: 45.00, total: 2250.00, aiReasoning: 'Moving of cubiclesand desks to access flooring.' },
+            { category: 'Cleaning', description: 'Clean Office Cubicles', quantity: 45, unit: 'EA', unitPrice: 35.00, total: 1575.00, aiReasoning: 'Hygienic cleaning of partition walls detected with moisture.' },
+            { category: 'Repairs', description: 'Commercial Carpet Tiles (Install)', quantity: 2500, unit: 'SF', unitPrice: 4.50, total: 11250.00, aiReasoning: 'Install new modular carpet tiles.' },
+            { category: 'Repairs', description: 'commercial Painting - Walls', quantity: 5000, unit: 'SF', unitPrice: 0.85, total: 4250.00, aiReasoning: 'Repaint affected walls corner-to-corner.' }
+        ]
     },
 ];
 

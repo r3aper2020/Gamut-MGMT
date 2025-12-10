@@ -5,7 +5,7 @@ import { db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreComments } from '../hooks/useFirestore';
 import ClaimStatusBadge from '../components/ClaimStatusBadge';
-import { ArrowLeft, DollarSign, Calendar, Building2, X, User, MapPin, ImageIcon, MessageSquare, Send, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, DollarSign, Calendar, Building2, X, User, MapPin, ImageIcon, MessageSquare, Send, CheckCircle, XCircle, ClipboardList, FileText, CheckCircle2, AlertTriangle, BookOpen, AlertCircle, Eye } from 'lucide-react';
 
 export default function ClaimDetailPage() {
     const { id } = useParams();
@@ -29,6 +29,9 @@ export default function ClaimDetailPage() {
                         submittedAt: claimDoc.data().submittedAt?.toDate(),
                         updatedAt: claimDoc.data().updatedAt?.toDate(),
                     };
+                    console.log('DEBUG: Claim Data:', claimData);
+                    console.log('DEBUG: Line Items:', claimData.lineItems);
+                    console.log('DEBUG: AI Analysis:', claimData.aiAnalysis);
                     setClaim(claimData);
 
                     // Fetch team data
@@ -182,7 +185,149 @@ export default function ClaimDetailPage() {
                         )}
                     </div>
 
-                    {/* Attachments */}
+                    {/* Damage Assessment & Estimate */}
+                    {(claim.aiAnalysis || claim.lineItems?.length > 0) && (
+                        <div className="card space-y-6">
+                            <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
+                                <ClipboardList size={20} />
+                                Damage Assessment & Estimate
+                            </h2>
+
+                            {/* AI Analysis */}
+                            {claim.aiAnalysis && (
+                                <div className="bg-slate-800/50 rounded-lg p-4 space-y-4">
+                                    <div className="flex items-start justify-between">
+                                        <h3 className="font-medium text-gray-100 flex items-center gap-2">
+                                            <FileText size={18} className="text-blue-400" />
+                                            AI Restoration Analysis
+                                        </h3>
+                                        <div className="flex items-center gap-1 text-sm bg-blue-500/20 text-blue-300 px-2 py-1 rounded">
+                                            <span>Confidence:</span>
+                                            <span className="font-semibold">{Math.round(claim.aiAnalysis.confidenceScore * 100)}%</span>
+                                        </div>
+                                    </div>
+
+                                    <p className="text-gray-300 text-sm leading-relaxed">
+                                        {claim.aiAnalysis.summary}
+                                    </p>
+
+                                    {claim.aiAnalysis.restorationInstructions?.length > 0 && (
+                                        <div className="space-y-2">
+                                            <p className="text-sm font-medium text-gray-400">Suggested Actions:</p>
+                                            <ul className="space-y-1">
+                                                {claim.aiAnalysis.restorationInstructions.map((instruction, idx) => (
+                                                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-300">
+                                                        <CheckCircle2 size={16} className="text-green-500 mt-0.5 shrink-0" />
+                                                        {instruction}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Line Items Table */}
+                            {claim.lineItems?.length > 0 && (
+                                <div>
+                                    <h3 className="font-medium text-gray-100 mb-4 flex items-center gap-2">
+                                        <DollarSign size={18} className="text-green-400" />
+                                        Estimate Line Items
+                                    </h3>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="bg-slate-800 text-gray-400 uppercase text-xs">
+                                                <tr>
+                                                    <th className="px-4 py-3 rounded-tl-lg">Category</th>
+                                                    <th className="px-4 py-3">Description & Context</th>
+                                                    <th className="px-4 py-3">Evidence</th>
+                                                    <th className="px-4 py-3 text-right">Qty</th>
+                                                    <th className="px-4 py-3 text-right">Unit Price</th>
+                                                    <th className="px-4 py-3 text-right rounded-tr-lg">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-700">
+                                                {claim.lineItems.map((item, idx) => (
+                                                    <tr key={idx} className="hover:bg-slate-800/30">
+                                                        <td className="px-4 py-3 text-gray-400 align-top">{item.category}</td>
+                                                        <td className="px-4 py-3 align-top">
+                                                            <div className="text-gray-200 font-medium">{item.description}</div>
+
+                                                            {/* AI Reasoning */}
+                                                            {item.aiReasoning && (
+                                                                <div className="text-xs text-blue-300 mt-1.5 flex items-start gap-1.5">
+                                                                    <div className="mt-0.5">✨</div>
+                                                                    <span>{item.aiReasoning}</span>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Reference Standard */}
+                                                            {item.referenceSource && (
+                                                                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded bg-slate-700/50 border border-slate-600">
+                                                                    <BookOpen size={12} className="text-slate-400" />
+                                                                    <span className="text-xs text-slate-300 font-medium">{item.referenceSource.code}</span>
+                                                                    <span className="text-xs text-slate-500 border-l border-slate-600 pl-1.5">{item.referenceSource.description}</span>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Clarification Note */}
+                                                            {item.userFullfilled && item.clarificationNote && (
+                                                                <div className="mt-2 flex items-start gap-1.5 text-xs text-amber-400 bg-amber-400/10 p-2 rounded border border-amber-400/20">
+                                                                    <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                                                                    <div>
+                                                                        <span className="font-semibold block">User Verified:</span>
+                                                                        {item.clarificationNote}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3 align-top">
+                                                            {/* Linked Photos */}
+                                                            {item.linkedPhotoIds?.length > 0 && (
+                                                                <div className="flex -space-x-2 overflow-hidden">
+                                                                    {item.linkedPhotoIds.map(photoId => {
+                                                                        const photo = claim.attachments.find(a => (a.id || a) === photoId || a.id === photoId);
+                                                                        const url = typeof photo === 'string' ? photo : photo?.url;
+                                                                        if (!url) return null;
+
+                                                                        return (
+                                                                            <div
+                                                                                key={photoId}
+                                                                                className="relative w-10 h-10 rounded-lg border-2 border-slate-900 cursor-pointer hover:scale-110 transition-transform z-0 hover:z-10"
+                                                                                onClick={() => setSelectedImage(photo)}
+                                                                                title="View Evidence Match"
+                                                                            >
+                                                                                <img src={url} alt="Evidence" className="w-full h-full object-cover" />
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right text-gray-300 align-top">
+                                                            {item.quantity} {item.unit}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right text-gray-300 align-top">
+                                                            ${item.unitPrice.toFixed(2)}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right font-medium text-gray-200 align-top">
+                                                            ${item.total.toFixed(2)}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                <tr className="bg-slate-800/80 font-semibold text-gray-100">
+                                                    <td colSpan="5" className="px-4 py-3 text-right">Grand Total</td>
+                                                    <td className="px-4 py-3 text-right text-lg">
+                                                        ${claim.lineItems.reduce((acc, item) => acc + item.total, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                     <div className="card">
                         <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center gap-2">
                             <ImageIcon size={20} />
