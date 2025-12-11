@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import Modal from './Modal';
-import { CheckCircle, XCircle, AlertTriangle, Send } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Send, RefreshCw } from 'lucide-react';
 
 /**
  * Component to handle Claim Approval workflow (Approve, Reject, Revision, Submit).
@@ -13,7 +13,7 @@ import { CheckCircle, XCircle, AlertTriangle, Send } from 'lucide-react';
  * @param {Function} props.onStatusUpdate - Callback when status changes (receives new partial claim data)
  */
 export default function ApprovalActions({ claim, id, user, onStatusUpdate }) {
-    const [activeModal, setActiveModal] = useState(null); // 'approve', 'reject', 'revise', 'submit'
+    const [activeModal, setActiveModal] = useState(null); // 'approve', 'reject', 'revise', 'submit', 'reopen'
     const [actionNote, setActionNote] = useState('');
     const [processingAction, setProcessingAction] = useState(false);
 
@@ -60,6 +60,13 @@ export default function ApprovalActions({ claim, id, user, onStatusUpdate }) {
                     status: 'sent_to_insurance',
                     insuranceSubmittedAt: Timestamp.now()
                 };
+            } else if (activeModal === 'reopen') {
+                updates = {
+                    status: 'under_review',
+                    updatedAt: Timestamp.now(),
+                    // Clear rejection/revision flags
+                    'metadata.rejectionReason': null
+                };
             }
 
             await updateDoc(doc(db, 'claims', id), updates);
@@ -72,12 +79,19 @@ export default function ApprovalActions({ claim, id, user, onStatusUpdate }) {
             if (localUpdates.insuranceSubmittedAt) localUpdates.insuranceSubmittedAt = new Date();
 
             // Handle nested metadata update for local state
-            if (localUpdates['metadata.rejectionReason']) {
-                delete localUpdates['metadata.rejectionReason'];
-                localUpdates.metadata = {
-                    ...claim.metadata,
-                    rejectionReason: actionNote
-                };
+            if (localUpdates['metadata.rejectionReason'] !== undefined) {
+                // If specifically set to null (reopen) or value (reject/revise)
+                if (localUpdates['metadata.rejectionReason'] === null) {
+                    // Remove from metadata if null
+                    localUpdates.metadata = { ...claim.metadata };
+                    delete localUpdates.metadata.rejectionReason;
+                } else {
+                    delete localUpdates['metadata.rejectionReason'];
+                    localUpdates.metadata = {
+                        ...claim.metadata,
+                        rejectionReason: actionNote
+                    };
+                }
             }
 
             onStatusUpdate(localUpdates);
@@ -141,9 +155,18 @@ export default function ApprovalActions({ claim, id, user, onStatusUpdate }) {
                     </p>
                 </div>
             ) : claim.status === 'rejected' ? (
-                <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-center">
-                    <XCircle className="text-red-500 mx-auto mb-2" size={24} />
-                    <p className="text-sm font-medium text-red-400">Claim Rejected</p>
+                <div className="space-y-3">
+                    <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-center">
+                        <XCircle className="text-red-500 mx-auto mb-2" size={24} />
+                        <p className="text-sm font-medium text-red-400">Claim Rejected</p>
+                    </div>
+                    <button
+                        onClick={() => openActionModal('reopen')}
+                        className="btn btn-secondary w-full flex items-center justify-center gap-2"
+                    >
+                        <RefreshCw size={20} />
+                        Reopen Claim
+                    </button>
                 </div>
             ) : claim.status === 'revision_requested' ? (
                 <div className="p-3 bg-yellow-500/10 border border-yellow-500/50 rounded-lg text-center">
@@ -159,7 +182,8 @@ export default function ApprovalActions({ claim, id, user, onStatusUpdate }) {
                     activeModal === 'approve' ? 'Approve Claim' :
                         activeModal === 'reject' ? 'Reject Claim' :
                             activeModal === 'revise' ? 'Request Revision' :
-                                activeModal === 'submit' ? 'Submit to Insurance' : ''
+                                activeModal === 'submit' ? 'Submit to Insurance' :
+                                    activeModal === 'reopen' ? 'Reopen Claim' : ''
                 }
                 footer={
                     <>
@@ -174,8 +198,9 @@ export default function ApprovalActions({ claim, id, user, onStatusUpdate }) {
                             onClick={handleConfirmAction}
                             disabled={processingAction}
                             className={`px-4 py-2 text-sm text-white rounded-lg transition-colors flex items-center gap-2 ${activeModal === 'approve' ? 'bg-green-600 hover:bg-green-500' :
-                                    activeModal === 'reject' ? 'bg-red-600 hover:bg-red-500' :
-                                        activeModal === 'revise' ? 'bg-yellow-600 hover:bg-yellow-500' :
+                                activeModal === 'reject' ? 'bg-red-600 hover:bg-red-500' :
+                                    activeModal === 'revise' ? 'bg-yellow-600 hover:bg-yellow-500' :
+                                        activeModal === 'reopen' ? 'bg-blue-600 hover:bg-blue-500' :
                                             'bg-blue-600 hover:bg-blue-500'
                                 }`}
                         >
@@ -183,7 +208,8 @@ export default function ApprovalActions({ claim, id, user, onStatusUpdate }) {
                             {activeModal === 'approve' ? 'Confirm Approval' :
                                 activeModal === 'reject' ? 'Confirm Rejection' :
                                     activeModal === 'revise' ? 'Send Request' :
-                                        'Confirm Submission'}
+                                        activeModal === 'reopen' ? 'Confirm Reopen' :
+                                            'Confirm Submission'}
                         </button>
                     </>
                 }
@@ -198,6 +224,12 @@ export default function ApprovalActions({ claim, id, user, onStatusUpdate }) {
                     {activeModal === 'submit' && (
                         <p className="text-gray-300">
                             Are you sure you want to submit this claim to insurance? This will notify the relevant parties.
+                        </p>
+                    )}
+
+                    {activeModal === 'reopen' && (
+                        <p className="text-gray-300">
+                            Are you sure you want to reopen this rejected claim? It will be moved back to <strong>Under Review</strong> status.
                         </p>
                     )}
 

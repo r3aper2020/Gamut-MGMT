@@ -7,7 +7,9 @@ import { useFirestoreComments } from '../hooks/useFirestore';
 import ClaimStatusBadge from '../components/ClaimStatusBadge';
 import LineItemRow from '../components/LineItemRow';
 import ApprovalActions from '../components/ApprovalActions';
+import SubmitAction from '../components/SubmitAction';
 import CommentsSection from '../components/CommentsSection';
+import ManagerAuditPanel from '../components/ManagerAuditPanel';
 import { ArrowLeft, DollarSign, Calendar, Building2, User, MapPin, ImageIcon, MessageSquare, Send, CheckCircle, XCircle, ClipboardList, FileText, CheckCircle2, AlertTriangle, Eye, Plus, X, Printer, LayoutTemplate } from 'lucide-react';
 import '../styles/PrintLayout.css';
 
@@ -290,6 +292,9 @@ export default function ClaimDetailPage() {
                 </div>
             ) : (
                 <>
+                    {/* Manager Audit Panel */}
+                    <ManagerAuditPanel claim={claim} />
+
                     {/* STANDARD VIEW CONTENT */}
 
                     {/* Top Content Grid */}
@@ -366,8 +371,15 @@ export default function ClaimDetailPage() {
 
                         {/* Approval Actions (Top Right) */}
                         <div className="lg:col-span-1 print:hidden">
-                            {canApprove && (
+                            {canApprove ? (
                                 <ApprovalActions
+                                    claim={claim}
+                                    id={id}
+                                    user={user}
+                                    onStatusUpdate={(updates) => setClaim(prev => ({ ...prev, ...updates }))}
+                                />
+                            ) : (claim.status === 'draft' || claim.status === 'revision_requested') && (
+                                <SubmitAction
                                     claim={claim}
                                     id={id}
                                     user={user}
@@ -543,13 +555,12 @@ export default function ClaimDetailPage() {
                                                                     <table className="w-full text-sm text-left">
                                                                         <thead className="bg-slate-900/50 text-gray-400 uppercase text-xs print:bg-gray-50 print:text-gray-600">
                                                                             <tr>
-                                                                                <th className="px-4 py-3 whitespace-nowrap">Category</th>
-                                                                                <th className="px-4 py-3 w-1/2 min-w-[300px]">Description & Context</th>
-                                                                                <th className="px-4 py-3 whitespace-nowrap">Evidence</th>
-                                                                                <th className="px-4 py-3 text-right whitespace-nowrap">Qty</th>
-                                                                                <th className="px-4 py-3 text-right whitespace-nowrap">Unit Price</th>
-                                                                                <th className="px-4 py-3 text-right whitespace-nowrap">Total</th>
-                                                                                <th className="px-4 py-3 text-center whitespace-nowrap w-24 print:hidden">Actions</th>
+                                                                                <th className="px-4 py-3 text-left">Code</th>
+                                                                                <th className="px-4 py-3 text-left w-1/2">Description & Evidence</th>
+                                                                                <th className="px-4 py-3 text-right">Qty</th>
+                                                                                <th className="px-4 py-3 text-right">Unit Price</th>
+                                                                                <th className="px-4 py-3 text-right">Total</th>
+                                                                                <th className="px-2 py-3"></th>                              <th className="px-4 py-3 text-center whitespace-nowrap w-24 print:hidden">Actions</th>
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody className="divide-y divide-slate-700/50 print:divide-gray-200">

@@ -5,25 +5,25 @@ import ClaimStatusBadge from './ClaimStatusBadge';
 import { User, DollarSign, Clock } from 'lucide-react';
 
 const COLUMNS = [
-    { id: 'pending_review', title: 'Pending Review', color: 'border-yellow-500/50' },
-    { id: 'under_review', title: 'Under Review', color: 'border-purple-500/50' },
-    { id: 'revision_requested', title: 'Needs Revision', color: 'border-orange-500/50' },
-    { id: 'approved', title: 'Approved', color: 'border-green-500/50' },
-    { id: 'sent_to_insurance', title: 'Submitted', color: 'border-cyan-500/50' },
-    { id: 'rejected', title: 'Rejected', color: 'border-red-500/50' }
+    { id: 'draft', title: 'Drafts', color: 'border-slate-500/50', statuses: ['draft'] },
+    { id: 'needs_review', title: 'Needs Review', color: 'border-yellow-500/50', statuses: ['submitted', 'pending_review', 'under_review'] },
+    { id: 'needs_revision', title: 'Needs Revision', color: 'border-orange-500/50', statuses: ['revision_requested'] },
+    { id: 'approved', title: 'Approved', color: 'border-green-500/50', statuses: ['approved'] },
+    { id: 'sent_to_insurance', title: 'Sent to Carrier', color: 'border-indigo-500/50', statuses: ['sent_to_insurance'] },
+    { id: 'rejected', title: 'Rejected', color: 'border-red-500/50', statuses: ['rejected'] }
 ];
 
 export default function KanbanBoard({ claims }) {
     const navigate = useNavigate();
 
-    const getColumnClaims = (status) => {
-        return claims.filter(c => c.status === status);
+    const getColumnClaims = (statusList) => {
+        return claims.filter(c => statusList.includes(c.status));
     };
 
     return (
         <div className="flex gap-4 overflow-x-auto w-full h-full pb-4 px-1">
             {COLUMNS.map(column => {
-                const columnClaims = getColumnClaims(column.id);
+                const columnClaims = getColumnClaims(column.statuses);
 
                 return (
                     <div

@@ -139,6 +139,9 @@ const claims = [
         lineItems: [
             {
                 category: 'Mitigation',
+                selector: 'WTR EXT',
+                activity: '+',
+                source: 'AI',
                 description: 'Water Extraction (Cat 1)',
                 quantity: 250,
                 unit: 'SF',
@@ -151,6 +154,9 @@ const claims = [
             },
             {
                 category: 'Mitigation',
+                selector: 'WTR DHM>',
+                activity: '+',
+                source: 'AI',
                 description: 'Dehumidifier Rental (Large)',
                 quantity: 3,
                 unit: 'Day',
@@ -163,6 +169,9 @@ const claims = [
             },
             {
                 category: 'Demolition',
+                selector: 'FC BASE',
+                activity: '-',
+                source: 'AI',
                 description: 'Remove Baseboard',
                 quantity: 45,
                 unit: 'LF',
@@ -175,6 +184,9 @@ const claims = [
             },
             {
                 category: 'Demolition',
+                selector: 'CAB LOW',
+                activity: '-',
+                source: 'AI',
                 description: 'Remove Lower Cabinetry',
                 quantity: 12,
                 unit: 'LF',
@@ -187,10 +199,10 @@ const claims = [
                 clarificationNote: 'AI requested cabinet type. User selected: Standard Grade.',
                 room: 'Kitchen'
             },
-            { category: 'Repairs', description: 'Replace Drywall (4ft flood cut)', quantity: 180, unit: 'SF', unitPrice: 2.50, total: 450.00, aiReasoning: 'Standard 4ft flood cut required to access wet insulation.', room: 'Living Room' },
-            { category: 'Repairs', description: 'Paint - Walls', quantity: 350, unit: 'SF', unitPrice: 1.10, total: 385.00, aiReasoning: 'Painting required for new and existing drywall to match.', room: 'Living Room' },
-            { category: 'Repairs', description: 'Replace Laminate Flooring', quantity: 250, unit: 'SF', unitPrice: 4.50, total: 1125.00, aiReasoning: 'Laminate flooring is non-salvageable (Category 1 water).', room: 'Master Bedroom' },
-            { category: 'General', description: 'Dumpster Rental', quantity: 1, unit: 'EA', unitPrice: 450.00, total: 450.00, aiReasoning: 'Disposal of wet drywall, flooring, and cabinetry.', room: 'Exterior' }
+            { category: 'Repairs', selector: 'DRY 4LF', activity: '+', source: 'USER', description: 'Replace Drywall (4ft flood cut)', quantity: 180, unit: 'SF', unitPrice: 2.50, total: 450.00, aiReasoning: 'Standard 4ft flood cut required to access wet insulation.', room: 'Living Room' },
+            { category: 'Repairs', selector: 'PNT W', activity: '+', source: 'USER', description: 'Paint - Walls', quantity: 350, unit: 'SF', unitPrice: 1.10, total: 385.00, aiReasoning: 'Painting required for new and existing drywall to match.', room: 'Living Room' },
+            { category: 'Repairs', selector: 'FC LAM', activity: '+', source: 'AI', description: 'Replace Laminate Flooring', quantity: 250, unit: 'SF', unitPrice: 4.50, total: 1125.00, aiReasoning: 'Laminate flooring is non-salvageable (Category 1 water).', room: 'Master Bedroom' },
+            { category: 'General', selector: 'DMO DUMP', activity: '+', source: 'AI', description: 'Dumpster Rental', quantity: 1, unit: 'EA', unitPrice: 450.00, total: 450.00, aiReasoning: 'Disposal of wet drywall, flooring, and cabinetry.', room: 'Exterior' }
         ]
     },
     {
@@ -228,6 +240,9 @@ const claims = [
         lineItems: [
             {
                 category: 'Cleaning',
+                selector: 'CLN HEPA',
+                activity: '+',
+                source: 'AI',
                 description: 'HEPA Vacuuming - Heavy',
                 quantity: 450,
                 unit: 'SF',
@@ -237,9 +252,12 @@ const claims = [
                 linkedPhotoIds: ['att3'],
                 referenceSource: { code: 'IICRC S520', standard: 'Soot Removal', description: 'HEPA sandwich method' }
             },
-            { category: 'Cleaning', description: 'Chem Sponge Walls', quantity: 600, unit: 'SF', unitPrice: 0.55, total: 330.00, aiReasoning: 'Dry sponge cleaning required for non-oily soot residue.' },
+            { category: 'Cleaning', selector: 'CLN SPONG', activity: '+', source: 'AI', description: 'Chem Sponge Walls', quantity: 600, unit: 'SF', unitPrice: 0.55, total: 330.00, aiReasoning: 'Dry sponge cleaning required for non-oily soot residue.' },
             {
                 category: 'Deodorization',
+                selector: 'DOD FOG',
+                activity: '+',
+                source: 'AI',
                 description: 'Thermal Fogging',
                 quantity: 1500,
                 unit: 'CF',
@@ -251,8 +269,8 @@ const claims = [
                 userFullfilled: true,
                 clarificationNote: 'AI Prompt: Confirm area volume. User Confirmed: 1500 CF.'
             },
-            { category: 'Repairs', description: 'Replace Electrical Outlet & Wiring', quantity: 1, unit: 'EA', unitPrice: 250.00, total: 250.00, aiReasoning: 'Source of fire; complete replacement required for safety.' },
-            { category: 'Repairs', description: 'Seal & Paint', quantity: 600, unit: 'SF', unitPrice: 1.85, total: 1110.00, aiReasoning: 'Encapsulation of smoke stains followed by finish coat.' }
+            { category: 'Repairs', selector: 'ELE OUT', activity: '+', source: 'USER', description: 'Replace Electrical Outlet & Wiring', quantity: 1, unit: 'EA', unitPrice: 250.00, total: 250.00, aiReasoning: 'Source of fire; complete replacement required for safety.' },
+            { category: 'Repairs', selector: 'PNT S', activity: '+', source: 'USER', description: 'Seal & Paint', quantity: 600, unit: 'SF', unitPrice: 1.85, total: 1110.00, aiReasoning: 'Encapsulation of smoke stains followed by finish coat.' }
         ]
     },
     {

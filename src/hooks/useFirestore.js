@@ -31,10 +31,10 @@ export function useFirestoreClaims(user) {
                 orderBy('updatedAt', 'desc')
             );
         } else if (user.role === 'team_member') {
-            // Team member sees only their own claims
+            // Team member sees all claims in their team
             q = query(
                 collection(db, 'claims'),
-                where('submittedBy', '==', user.uid),
+                where('teamId', '==', user.teamId),
                 orderBy('updatedAt', 'desc')
             );
         } else {

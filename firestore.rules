@@ -77,17 +77,16 @@ service cloud.firestore {
       // Individual document read
       allow get: if isAuthenticated() && (
         isOrgOwner() ||
-        (isManager() && hasTeamAccess(resource.data.teamId)) ||
-        (isTeamMember() && resource.data.submittedBy == request.auth.uid)
+        ((isManager() || isTeamMember()) && hasTeamAccess(resource.data.teamId))
       );
       
       // Create - any authenticated user can create
       allow create: if isAuthenticated() && 
         request.resource.data.submittedBy == request.auth.uid;
       
-      // Update - only managers and owners
+      // Update - managers, owners, and team members
       allow update: if isOrgOwner() || 
-        (isManager() && hasTeamAccess(resource.data.teamId));
+        ((isManager() || isTeamMember()) && hasTeamAccess(resource.data.teamId));
       
       // Delete - only org owner
       allow delete: if isOrgOwner();

@@ -38,209 +38,170 @@ const LineItemRow = ({
     groupBy
 }) => {
     return (
-        <tr className={editingItemIndex === idx ? "bg-slate-800/50" : "hover:bg-slate-800/30 group transition-colors"}>
+        <tr className={`
+            ${editingItemIndex === idx ? "bg-slate-800/50 border-l-4 border-l-blue-500" : "hover:bg-slate-800/30 group transition-colors border-l-4"} 
+            ${item.source === 'AI' ? 'border-l-blue-500/50' : 'border-l-slate-600/50'}
+        `}>
             {editingItemIndex === idx ? (
-                // EDIT MODE
+                // --- EDIT MODE ---
                 <>
-                    <td className="px-2 py-3 align-top">
-                        <input
-                            type="text"
-                            className="input text-xs w-full px-2 py-1 min-w-[100px] bg-slate-900 border-slate-700 rounded focus:ring-1 focus:ring-blue-500 outline-none"
-                            value={editedItemData.category}
-                            onChange={(e) => setEditedItemData({ ...editedItemData, category: e.target.value })}
-                        />
+                    {/* Code Column */}
+                    <td className="px-4 py-3 align-top">
+                        <div className="flex flex-col gap-2">
+                            <input
+                                type="text"
+                                placeholder="SEL"
+                                className="input text-xs w-full px-2 py-1 bg-slate-900 border-slate-700 rounded font-mono font-bold"
+                                value={editedItemData.selector || ''}
+                                onChange={(e) => setEditedItemData({ ...editedItemData, selector: e.target.value })}
+                            />
+                            <input
+                                type="text"
+                                className="input text-[10px] w-full px-2 py-1 bg-slate-900 border-slate-700 rounded text-gray-400"
+                                value={editedItemData.category}
+                                onChange={(e) => setEditedItemData({ ...editedItemData, category: e.target.value })}
+                            />
+                        </div>
                     </td>
-                    <td className="px-2 py-3 align-top">
-                        <input
-                            type="text"
-                            className="input text-xs w-full px-2 py-1 mb-2 bg-slate-900 border-slate-700 rounded focus:ring-1 focus:ring-blue-500 outline-none"
+
+                    {/* Description Column */}
+                    <td className="px-4 py-3 align-top">
+                        <textarea
+                            className="input text-sm w-full px-3 py-2 min-h-[80px] bg-slate-900 border-slate-700 rounded focus:ring-1 focus:ring-blue-500 outline-none resize-y"
                             value={editedItemData.description}
                             onChange={(e) => setEditedItemData({ ...editedItemData, description: e.target.value })}
                         />
-                        <textarea
-                            className="input text-xs w-full px-2 py-1 min-h-[60px] bg-slate-900 border-slate-700 rounded focus:ring-1 focus:ring-blue-500 outline-none"
-                            placeholder="Add Adjuster Notes..."
+                        <input
+                            type="text"
+                            placeholder="Reviewer Note..."
+                            className="input text-xs w-full px-2 py-1 mt-2 bg-slate-900 border-slate-700 rounded text-purple-300 placeholder-purple-500/50"
                             value={editedItemData.adjusterNotes || ''}
                             onChange={(e) => setEditedItemData({ ...editedItemData, adjusterNotes: e.target.value })}
                         />
-                        {/* Room Editor */}
-                        <select
-                            className="input text-xs w-full px-2 py-1 mt-2 bg-slate-900 border-slate-700 rounded focus:ring-1 focus:ring-blue-500 outline-none"
-                            value={editedItemData.room || ''}
-                            onChange={(e) => setEditedItemData({ ...editedItemData, room: e.target.value })}
-                        >
-                            <option value="">Select Room...</option>
-                            <option value="Kitchen">Kitchen</option>
-                            <option value="Living Room">Living Room</option>
-                            <option value="Master Bedroom">Master Bedroom</option>
-                            <option value="Guest Bedroom">Guest Bedroom</option>
-                            <option value="Bathroom">Bathroom</option>
-                            <option value="Exterior">Exterior</option>
-                            <option value="General">General</option>
-                        </select>
                     </td>
-                    <td className="px-2 py-3 align-top text-gray-500 text-xs italic whitespace-nowrap">
-                        (Fixed)
-                    </td>
-                    <td className="px-2 py-3 align-top text-right">
-                        <div className="flex flex-col gap-1 items-end">
+
+                    {/* Qty Column */}
+                    <td className="px-4 py-3 align-top text-right">
+                        <div className="flex flex-col items-end gap-1">
                             <input
                                 type="number"
-                                className="input text-xs w-20 px-1 py-1 text-right bg-slate-900 border-slate-700 rounded focus:ring-1 focus:ring-blue-500 outline-none"
+                                className="input text-sm w-20 px-2 py-1 text-right bg-slate-900 border-slate-700 rounded font-bold"
                                 value={editedItemData.quantity}
                                 onChange={(e) => setEditedItemData({ ...editedItemData, quantity: e.target.value })}
                             />
                             <input
                                 type="text"
-                                className="input text-xs w-20 px-1 py-1 text-right bg-slate-900 border-slate-700 rounded focus:ring-1 focus:ring-blue-500 outline-none"
-                                placeholder="Unit"
+                                className="input text-xs w-16 px-1 py-1 text-right bg-slate-900 border-slate-700 rounded text-gray-400"
                                 value={editedItemData.unit}
                                 onChange={(e) => setEditedItemData({ ...editedItemData, unit: e.target.value })}
                             />
                         </div>
                     </td>
-                    <td className="px-2 py-3 align-top text-right">
+
+                    {/* Price & Total Columns */}
+                    <td className="px-4 py-3 align-top text-right">
                         <input
                             type="number"
                             step="0.01"
-                            className="input text-xs w-24 px-2 py-1 text-right ml-auto bg-slate-900 border-slate-700 rounded focus:ring-1 focus:ring-blue-500 outline-none"
+                            className="input text-sm w-24 px-2 py-1 text-right bg-slate-900 border-slate-700 rounded"
                             value={editedItemData.unitPrice}
                             onChange={(e) => setEditedItemData({ ...editedItemData, unitPrice: e.target.value })}
                         />
                     </td>
-                    <td className="px-4 py-3 align-top text-right font-medium text-gray-200 whitespace-nowrap">
+                    <td className="px-4 py-3 align-top text-right font-medium text-gray-200">
                         ${(parseFloat(editedItemData.quantity || 0) * parseFloat(editedItemData.unitPrice || 0)).toFixed(2)}
                     </td>
+
+                    {/* Actions */}
                     <td className="px-2 py-3 align-top text-center">
                         <div className="flex items-center justify-center gap-2">
-                            <button
-                                onClick={() => handleSaveItem(idx)}
-                                className="p-1.5 bg-green-500/20 text-green-400 rounded hover:bg-green-500/30 transition-colors"
-                                title="Save"
-                            >
+                            <button onClick={() => handleSaveItem(idx)} className="p-1.5 bg-green-500/20 text-green-400 rounded hover:bg-green-500/30">
                                 <Check size={14} />
                             </button>
-                            <button
-                                onClick={handleCancelEdit}
-                                className="p-1.5 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition-colors"
-                                title="Cancel"
-                            >
+                            <button onClick={handleCancelEdit} className="p-1.5 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30">
                                 <X size={14} />
                             </button>
                         </div>
                     </td>
                 </>
             ) : (
-                // VIEW MODE
+                // --- VIEW MODE ---
                 <>
-                    <td className="px-4 py-3 text-gray-400 align-top">{item.category}</td>
-                    <td className="px-4 py-3 align-top break-words">
-                        <ExpandableText text={item.description} />
-
-                        {/* Room Tag - Hide in Room View to reduce clutter, Show in Standard View */}
-                        {item.room && groupBy !== 'room' && (
-                            <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-700 text-slate-300 border border-slate-600">
-                                {item.room}
-                            </span>
-                        )}
-
-                        {/* AI Reasoning */}
-                        {item.aiReasoning && (
-                            <div className="text-xs text-blue-300 mt-1.5 flex items-start gap-1.5 bg-blue-500/5 p-1.5 rounded">
-                                <div className="mt-0.5">✨</div>
-                                <span>{item.aiReasoning}</span>
-                            </div>
-                        )}
-
-                        {/* Reference Standard */}
-                        {item.referenceSource && (
-                            <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded bg-slate-700/50 border border-slate-600">
-                                <BookOpen size={12} className="text-slate-400" />
-                                <span className="text-xs text-slate-300 font-medium">{item.referenceSource.code}</span>
-                                <span className="text-xs text-slate-500 border-l border-slate-600 pl-1.5">{item.referenceSource.description}</span>
-                            </div>
-                        )}
-
-                        {/* Clarification Note */}
-                        {item.userFullfilled && item.clarificationNote && (
-                            <div className="mt-2 flex items-start gap-1.5 text-xs text-amber-400 bg-amber-400/10 p-2 rounded border border-amber-400/20">
-                                <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                                <div>
-                                    <span className="font-semibold block">User Verified:</span>
-                                    {item.clarificationNote}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Adjuster Notes */}
-                        {item.adjusterNotes && (
-                            <div className="mt-2 flex items-start gap-1.5 text-xs text-purple-300 bg-purple-500/10 p-2 rounded border border-purple-500/20">
-                                <Edit2 size={12} className="shrink-0 mt-0.5" />
-                                <div>
-                                    <span className="font-semibold block text-purple-400">Reviewer Note:</span>
-                                    {item.adjusterNotes}
-                                </div>
+                    {/* Code Column */}
+                    <td className="px-4 py-3 align-top">
+                        <div className="font-mono font-bold text-gray-200 text-sm">{item.selector}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-gray-500 mt-0.5">{item.category}</div>
+                        {item.activity && (
+                            <div className="text-[10px] font-mono text-gray-400 mt-1 bg-slate-800 inline-block px-1 rounded">
+                                Act: <span className="text-gray-300">{item.activity}</span>
                             </div>
                         )}
                     </td>
+
+                    {/* Description Column (Content + Evidence) */}
                     <td className="px-4 py-3 align-top">
-                        {/* Linked Photos */}
+                        <div className="text-sm text-gray-300 leading-relaxed">
+                            <ExpandableText text={item.description} />
+                        </div>
+
+                        {/* Metadata Row (Room, AI Reasoning) */}
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                            {item.room && groupBy !== 'room' && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-700 text-slate-300 border border-slate-600">
+                                    {item.room}
+                                </span>
+                            )}
+                            {item.aiReasoning && (
+                                <span className="text-[10px] text-blue-300/80 flex items-center gap-1" title={item.aiReasoning}>
+                                    <span>✨ AI Insight</span>
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Evidence Thumbnails Row */}
                         {item.linkedPhotoIds?.length > 0 && (
-                            <div className="flex -space-x-2 overflow-hidden items-center p-1">
-                                {item.linkedPhotoIds.slice(0, 3).map(photoId => {
+                            <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-700">
+                                {item.linkedPhotoIds.map(photoId => {
                                     const photo = claim.attachments.find(a => (a.id || a) === photoId || a.id === photoId);
                                     const url = typeof photo === 'string' ? photo : photo?.url;
                                     if (!url) return null;
-
                                     return (
                                         <div
                                             key={photoId}
-                                            className="relative w-10 h-10 rounded-lg border-2 border-slate-900 cursor-pointer hover:scale-110 transition-transform z-10 hover:z-20 shadow-sm"
+                                            className="relative w-12 h-12 shrink-0 rounded border border-slate-700 courser-pointer hover:border-blue-500 transition-colors cursor-pointer"
                                             onClick={() => setSelectedImage(photo)}
-                                            title="View Evidence Match"
                                         >
-                                            <img src={url} alt="Evidence" className="w-full h-full object-cover rounded-md" />
+                                            <img src={url} alt="" className="w-full h-full object-cover rounded-[3px]" />
                                         </div>
                                     );
                                 })}
-                                {item.linkedPhotoIds.length > 3 && (
-                                    <div
-                                        className="relative w-10 h-10 rounded-lg border-2 border-slate-900 bg-slate-700 flex items-center justify-center cursor-pointer hover:bg-slate-600 transition-colors z-30"
-                                        onClick={() => {
-                                            const photo = claim.attachments.find(a => (a.id || a) === item.linkedPhotoIds[3] || a.id === item.linkedPhotoIds[3]);
-                                            setSelectedImage(photo);
-                                        }}
-                                        title="View all photos"
-                                    >
-                                        <span className="text-xs font-bold text-white">+{item.linkedPhotoIds.length - 3}</span>
-                                    </div>
-                                )}
                             </div>
                         )}
                     </td>
-                    <td className="px-2 py-3 text-right text-gray-300 align-top">
-                        {item.quantity} {item.unit}
+
+                    {/* Qty Column */}
+                    <td className="px-4 py-3 align-top text-right">
+                        <div className="font-bold text-gray-200">{item.quantity}</div>
+                        <div className="text-xs text-gray-500">{item.unit}</div>
                     </td>
-                    <td className="px-2 py-3 text-right text-gray-300 align-top">
+
+                    {/* Price Column */}
+                    <td className="px-4 py-3 align-top text-right text-gray-300">
                         ${item.unitPrice.toFixed(2)}
                     </td>
-                    <td className="px-2 py-3 text-right font-medium text-gray-200 align-top">
+
+                    {/* Total Column */}
+                    <td className="px-4 py-3 align-top text-right font-medium text-gray-100">
                         ${item.total.toFixed(2)}
                     </td>
-                    <td className="px-2 py-3 text-center align-top">
+
+                    {/* Actions */}
+                    <td className="px-2 py-3 align-top text-center">
                         <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                onClick={() => handleEditItem(idx)}
-                                className="p-1.5 hover:bg-slate-700 text-gray-400 hover:text-white rounded transition-colors"
-                                title="Edit Item"
-                            >
+                            <button onClick={() => handleEditItem(idx)} className="p-1.5 hover:bg-slate-700 text-gray-400 hover:text-white rounded">
                                 <Pencil size={14} />
                             </button>
-                            <button
-                                onClick={() => handleDeleteItem(idx)}
-                                className="p-1.5 hover:bg-slate-700 text-red-400 hover:text-red-300 rounded transition-colors"
-                                title="Delete Item"
-                            >
+                            <button onClick={() => handleDeleteItem(idx)} className="p-1.5 hover:bg-slate-700 text-red-400 hover:text-red-300 rounded">
                                 <Trash2 size={14} />
                             </button>
                         </div>
