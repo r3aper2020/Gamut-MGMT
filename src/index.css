@@ -23,6 +23,10 @@
     @apply bg-slate-800 text-gray-100 hover:bg-slate-700 focus:ring-slate-600 border border-slate-700;
   }
 
+  .btn-ghost {
+    @apply text-gray-400 hover:text-white hover:bg-slate-800;
+  }
+
   .btn-success {
     @apply bg-accent-600 text-white hover:bg-accent-500 focus:ring-accent-500 shadow-lg shadow-accent-500/20 hover:shadow-accent-500/40;
   }
@@ -37,6 +41,10 @@
 
   .input {
     @apply w-full px-4 py-2 bg-slate-800 border border-slate-700 text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 placeholder-gray-500;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-300 mb-1.5;
   }
 
   .badge {

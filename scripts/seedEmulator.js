@@ -36,11 +36,11 @@ const organization = {
 };
 
 const teams = [
-    { id: 'team1', name: 'Water Damage Team', organizationId: 'org1', specialty: 'Water Damage', memberCount: 8 },
-    { id: 'team2', name: 'Fire Restoration Team', organizationId: 'org1', specialty: 'Fire Restoration', memberCount: 6 },
-    { id: 'team3', name: 'Mold Remediation Team', organizationId: 'org1', specialty: 'Mold Remediation', memberCount: 5 },
-    { id: 'team4', name: 'Storm Damage Team', organizationId: 'org1', specialty: 'Storm Damage', memberCount: 7 },
-    { id: 'team5', name: 'General Restoration', organizationId: 'org1', specialty: 'General Restoration', memberCount: 10 },
+    { id: 'team1', name: 'Water Damage Team', organizationId: 'org1', specialty: 'Water Damage', memberCount: 8, description: 'Specializes in rapid response for water damage mitigation.' },
+    { id: 'team2', name: 'Fire Restoration Team', organizationId: 'org1', specialty: 'Fire Restoration', memberCount: 6, description: 'Experts in fire and smoke damage restoration.' },
+    { id: 'team3', name: 'Mold Remediation Team', organizationId: 'org1', specialty: 'Mold Remediation', memberCount: 5, description: 'Certified mold remediation specialists.' },
+    { id: 'team4', name: 'Storm Damage Team', organizationId: 'org1', specialty: 'Storm Damage', memberCount: 7, description: 'First responders for severe storm impacts.' },
+    { id: 'team5', name: 'General Restoration', organizationId: 'org1', specialty: 'General Restoration', memberCount: 10, description: 'Handling general repairs and reconstruction.' },
 ];
 
 const users = [
@@ -466,7 +466,7 @@ async function seedData() {
 
                 // Set user role to ensure custom claims are consistent
                 if (user.role) {
-                    await auth.setCustomUserClaims(firebaseUid, { role: user.role, organizationId: user.organizationId });
+                    await auth.setCustomUserClaims(firebaseUid, { role: user.role, organizationId: user.organizationId, teamId: user.teamId });
                     console.log(`    ✓ Set custom claims for ${user.email}`);
                 }
 
@@ -481,7 +481,7 @@ async function seedData() {
 
                         // Update claims even if user exists
                         if (user.role) {
-                            await auth.setCustomUserClaims(firebaseUid, { role: user.role, organizationId: user.organizationId });
+                            await auth.setCustomUserClaims(firebaseUid, { role: user.role, organizationId: user.organizationId, teamId: user.teamId });
                         }
 
                     } catch (fetchError) {
@@ -522,7 +522,15 @@ async function seedData() {
         // Create teams
         console.log('\n👥 Creating teams...');
         for (const team of teams) {
-            await db.collection('teams').doc(team.id).set(team);
+            // Backend schema does not store 'id' inside the doc, only as key.
+            // Also adds timestamps.
+            const { id, ...teamData } = team;
+            const dataToSave = {
+                ...teamData,
+                createdAt: admin.firestore.Timestamp.now(),
+                updatedAt: admin.firestore.Timestamp.now()
+            };
+            await db.collection('teams').doc(id).set(dataToSave);
             console.log(`  ✓ Created: ${team.name}`);
         }
 

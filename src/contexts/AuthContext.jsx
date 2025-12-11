@@ -21,13 +21,25 @@ export const AuthProvider = ({ children }) => {
         refreshUser,
         loading,
         isAuthenticated: !!user,
-        organizationId: user?.organizationId, // Ensure this claim is mapped or key is present in user object
+        organizationId: user?.organizationId,
+        userTeamId: user?.teamId, // Important for managers
+        role: user?.role,
+
+        // Role Checks
         isOrgOwner: user?.role === 'org_owner',
+        isAdmin: user?.role === 'manager_admin',
         isManager: user?.role === 'manager',
         isTeamMember: user?.role === 'team_member',
-        hasAdminRights: user?.hasAdminRights || user?.role === 'org_owner',
-        canViewAllTeams: user?.role === 'org_owner' || user?.hasAdminRights,
-        canApprove: user?.role === 'org_owner' || user?.role === 'manager',
+
+        // Permission Derived State
+        canManageAllUsers: user?.role === 'org_owner' || user?.role === 'manager_admin',
+        canManageTeamUsers: user?.role === 'manager', // Managers can only manage their own team's users
+        canViewOrganizationSettings: user?.role === 'org_owner' || user?.role === 'manager_admin',
+
+        // Legacy/Compat flags (review usage later)
+        hasAdminRights: user?.hasAdminRights || user?.role === 'org_owner' || user?.role === 'manager_admin',
+        canViewAllTeams: user?.role === 'org_owner' || user?.role === 'manager_admin',
+        canApprove: user?.role === 'org_owner' || user?.role === 'manager' || user?.role === 'manager_admin',
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

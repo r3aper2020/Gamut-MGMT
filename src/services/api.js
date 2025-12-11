@@ -79,3 +79,33 @@ export const updateUserProfile = async (profileData) => {
 };
 
 
+// --- Team Management ---
+
+export const getTeams = async () => {
+    return apiCall("/teams", "GET");
+};
+
+export const createTeam = async (teamData) => {
+    // teamData: { name, specialty, description }
+    return apiCall("/teams", "POST", teamData);
+};
+
+export const updateTeam = async (teamId, teamData) => {
+    // teamData: { name, specialty, description }
+    return apiCall(`/teams/${teamId}`, "PUT", teamData);
+};
+
+export const deleteTeam = async (teamId) => {
+    return apiCall(`/teams/${teamId}`, "DELETE");
+};
+
+// --- Admin User Management ---
+
+export const adminUpdateUser = async (uid, updates) => {
+    // updates: { role, teamId, jobTitle, etc }
+    return apiCall(`/admin/users/${uid}`, "PUT", updates);
+};
+
+export const adminDeleteUser = async (uid) => {
+    return apiCall(`/admin/users/${uid}`, "DELETE");
+};

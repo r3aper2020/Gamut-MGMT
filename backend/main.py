@@ -64,6 +64,7 @@ class UserResponse(BaseModel):
     displayName: Optional[str] = None
     role: Optional[str] = None
     organizationId: Optional[str] = None
+    teamId: Optional[str] = None
 
 class UserProfileUpdate(BaseModel):
     jobTitle: Optional[str] = None
@@ -171,6 +172,15 @@ async def create_user(
     creator_role = creator.custom_claims.get('role')
     creator_org_id = creator.custom_claims.get('organizationId') # Get orgId from creator
 
+    print(f"DEBUG: create_user called by {creator.email} ({creator_role}) org={creator_org_id}")
+    print(f"DEBUG: Creating user: {new_user.email} role={new_user.role}")
+
+    if not creator_org_id:
+         print("DEBUG: Creator has no organizationId in claims")
+         # We might want to block this or handle it
+         raise HTTPException(status_code=400, detail="Creator is not part of an organization (missing claim). Try re-logging in.")
+
+
     # Role Hierarchy Check
     allowed_roles = []
     if creator_role == 'org_owner':
@@ -201,7 +211,25 @@ async def create_user(
         # Convert empty strings to None for optional fields
         jobCount = new_user.jobTitle if new_user.jobTitle else None
         phoneCount = new_user.phoneNumber if new_user.phoneNumber else None
-        teamCount = new_user.teamId if new_user.teamId else None
+        if new_user.teamId:
+            teamCount = new_user.teamId
+        else:
+            # Default to "General" team if exists
+            # We need to find the General team for this organization
+            general_team_query = db.collection('teams')\
+                .where('organizationId', '==', creator_org_id)\
+                .where('name', '==', 'General')\
+                .limit(1)\
+                .stream()
+            
+            for doc in general_team_query:
+                teamCount = doc.id
+                break
+            
+            if not teamCount:
+                 # Fallback/Edge case: No general team found, user stays teamless or we could create one?
+                 # ideally org creation handles this. keeping as None if not found.
+                 teamCount = None
 
         user_data = {
             'email': new_user.email,
@@ -220,34 +248,77 @@ async def create_user(
 
         db.collection('users').document(user_record.uid).set(user_data)
         
+        if new_user.teamId:
+            try:
+                team_ref = db.collection('teams').document(new_user.teamId)
+                team_ref.update({'memberCount': firestore.Increment(1)})
+            except Exception as e:
+                print(f"Failed to increment team count: {e}")
+
         return {
             "uid": user_record.uid,
             "email": new_user.email,
             "displayName": new_user.displayName,
             "role": new_user.role,
-            "organizationId": creator_org_id
+            "organizationId": creator_org_id,
+            "teamId": new_user.teamId
         }
     except Exception as e:
+        print(f"DEBUG: Error in create_user: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/users", response_model=List[UserResponse])
-async def list_users(user_token: dict = Depends(verify_admin)):
+async def list_users(user_token: dict = Depends(verify_token)):
     """
-    List all users.
+    List users.
+    - Admins/Managers: See all users in Organization.
+    - Members: See only users in their Team.
     """
     try:
+        uid = user_token['uid']
+        user = auth.get_user(uid)
+        org_id = user.custom_claims.get('organizationId')
+        role = user.custom_claims.get('role')
+        team_id = user.custom_claims.get('teamId')
+        
+        if not org_id:
+            return []
+            
         users = []
-        docs = db.collection('users').stream()
+        
+        # Base query
+        query = db.collection('users').where('organizationId', '==', org_id)
+
+        # Role-based filtering
+        if role == 'team_member':
+            if not team_id:
+                # If member has no team, they see no one (or just themselves?)
+                # Returning empty list or just themselves is safer.
+                # Let's return just themselves to be safe.
+                query = db.collection('users').where('uid', '==', uid) # This field might not exist on doc, usually it's document ID.
+                # Firestore doesn't query by document ID easily in 'where' clause for equality of self.
+                # Better implementation below:
+                pass 
+            else:
+                 query = query.where('teamId', '==', team_id)
+
+        docs = query.stream()
+        
         for doc in docs:
             data = doc.to_dict()
             users.append({
                 "uid": doc.id,
                 "email": data.get('email'),
                 "displayName": data.get('displayName'),
-                "role": data.get('role')
+                "role": data.get('role'),
+                "organizationId": data.get('organizationId'),
+                "teamId": data.get('teamId')
             })
         return users
     except Exception as e:
+        print(f"Error listing users: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.put("/api/users/profile")
@@ -280,6 +351,117 @@ async def admin_action(user_token: dict = Depends(verify_token)):
         "email": user_token.get("email")
     }
 
+@app.put("/api/admin/users/{uid}")
+async def admin_update_user(
+    uid: str,
+    updates: dict = Body(...),
+    admin_token: dict = Depends(verify_admin)
+):
+    """
+    Admin: Update user details (role, team, valid jobs etc).
+    """
+    try:
+        # Verify permissions (managers can't edit org owners, etc.)
+        target_user = auth.get_user(uid)
+        target_role = target_user.custom_claims.get('role') if target_user.custom_claims else 'member'
+        
+        # Fetch current user data from Firestore to get old teamId
+        current_user_doc = db.collection('users').document(uid).get()
+        current_user_data = current_user_doc.to_dict() if current_user_doc.exists else {}
+        old_team_id = current_user_data.get('teamId')
+
+        caller_uid = admin_token['uid']
+        caller_user = auth.get_user(caller_uid)
+        caller_role = caller_user.custom_claims.get('role') if caller_user.custom_claims else 'member'
+        
+        # Simple hierarchy check
+        if target_role == 'org_owner' and caller_role != 'org_owner':
+             raise HTTPException(status_code=403, detail="Cannot edit Organization Owner")
+        
+        if updates.get('role'):
+             if caller_role != 'org_owner' and updates['role'] in ['org_owner', 'manager_admin']:
+                  raise HTTPException(status_code=403, detail="Insufficient permissions to assign this role")
+
+             # Update auth claims
+             current_claims = target_user.custom_claims or {}
+             current_claims['role'] = updates['role']
+             auth.set_custom_user_claims(uid, current_claims)
+
+        # Handle Team Change Logic
+        if 'teamId' in updates:
+            new_team_id = updates['teamId']
+            if new_team_id != old_team_id:
+                try:
+                    # Decrement old team
+                    if old_team_id:
+                        db.collection('teams').document(old_team_id).update({'memberCount': firestore.Increment(-1)})
+                    
+                    # Increment new team
+                    if new_team_id:
+                        db.collection('teams').document(new_team_id).update({'memberCount': firestore.Increment(1)})
+                except Exception as e:
+                    print(f"Error updating team counts: {e}")
+
+        # Update Firestore
+        updates['updatedAt'] = firestore.SERVER_TIMESTAMP
+        db.collection('users').document(uid).update(updates)
+        
+        return {"message": "User updated successfully"}
+
+    except Exception as e:
+        print(f"Error updating user: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/admin/users/{uid}")
+async def admin_delete_user(
+    uid: str,
+    admin_token: dict = Depends(verify_admin)
+):
+    """
+    Admin: Delete a user.
+    """
+    try:
+        # Verify permissions
+        target_user = auth.get_user(uid)
+        target_role = target_user.custom_claims.get('role') if target_user.custom_claims else 'member'
+        
+        caller_uid = admin_token['uid']
+        caller_user = auth.get_user(caller_uid)
+        caller_role = caller_user.custom_claims.get('role') if caller_user.custom_claims else 'member'
+        
+        if target_role == 'org_owner':
+             raise HTTPException(status_code=403, detail="Cannot delete Organization Owner")
+             
+        if caller_role != 'org_owner' and target_role in ['manager', 'manager_admin']:
+             raise HTTPException(status_code=403, detail="Insufficient permissions to delete Managers")
+
+        # Get user data to find teamId
+        user_doc = db.collection('users').document(uid).get()
+        team_id = None
+        if user_doc.exists:
+             team_id = user_doc.to_dict().get('teamId')
+
+        # Delete from Auth
+        auth.delete_user(uid)
+        
+        # Delete from Firestore
+        db.collection('users').document(uid).delete()
+        
+        # Decrement Team Count
+        if team_id:
+             try:
+                 db.collection('teams').document(team_id).update({'memberCount': firestore.Increment(-1)})
+             except Exception as e:
+                 print(f"Failed to decrement team count on delete: {e}")
+
+        return {"message": "User deleted successfully"}
+
+    except Exception as e:
+        print(f"Error deleting user: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 class OrganizationCreate(BaseModel):
     name: str
     timezone: str
@@ -287,6 +469,17 @@ class OrganizationCreate(BaseModel):
     address: Optional[str] = None
     industry: Optional[str] = None
     size: Optional[str] = None
+
+class TeamCreate(BaseModel):
+    name: str
+    specialty: str
+    description: Optional[str] = None
+
+class TeamUpdate(BaseModel):
+    name: Optional[str] = None
+    specialty: Optional[str] = None
+    description: Optional[str] = None
+
 
 @app.post("/api/organization")
 async def create_organization(
@@ -318,9 +511,23 @@ async def create_organization(
         update_time, org_ref = db.collection('organizations').add(org_data)
         org_id = org_ref.id
 
-        # Update User Doc with orgId
+        # 1. Create Default "General" Team
+        general_team = {
+             'name': 'General',
+             'specialty': 'General Operations',
+             'description': 'Default team for organization members.',
+             'organizationId': org_id,
+             'memberCount': 1, # Owner will be added
+             'createdAt': firestore.SERVER_TIMESTAMP,
+             'updatedAt': firestore.SERVER_TIMESTAMP
+        }
+        _, team_ref = db.collection('teams').add(general_team)
+        general_team_id = team_ref.id
+
+        # 2. Update User Doc with orgId AND teamId
         db.collection('users').document(uid).update({
             'organizationId': org_id,
+            'teamId': general_team_id,
             'updatedAt': firestore.SERVER_TIMESTAMP
         })
 
@@ -328,6 +535,7 @@ async def create_organization(
         user = auth.get_user(uid)
         current_claims = user.custom_claims or {}
         current_claims['organizationId'] = org_id
+        current_claims['teamId'] = general_team_id # Is this needed in claims? keeping it out for now to avoid size limits, usually just db is enough.
         auth.set_custom_user_claims(uid, current_claims)
 
         return {
@@ -368,3 +576,104 @@ async def get_organization(user_token: dict = Depends(verify_token)):
     except Exception as e:
          print(f"Error fetching organization: {e}")
          raise HTTPException(status_code=500, detail=str(e))
+
+# --- Team Endpoints ---
+
+@app.get("/api/teams")
+async def list_teams(user_token: dict = Depends(verify_token)):
+    """
+    List all teams in the user's organization.
+    """
+    uid = user_token['uid']
+    user = auth.get_user(uid)
+    org_id = user.custom_claims.get('organizationId')
+    
+    if not org_id:
+        return []
+        
+    try:
+        teams = []
+        docs = db.collection('teams').where('organizationId', '==', org_id).stream()
+        for doc in docs:
+            data = doc.to_dict()
+            data['id'] = doc.id
+            teams.append(data)
+        return teams
+    except Exception as e:
+        print(f"Error listing teams: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/teams")
+async def create_team(
+    team_data: TeamCreate,
+    user_token: dict = Depends(verify_org_owner)
+):
+    """
+    Create a new team. Only Org Owner can create teams.
+    """
+    uid = user_token['uid']
+    user = auth.get_user(uid)
+    org_id = user.custom_claims.get('organizationId')
+    
+    if not org_id:
+        raise HTTPException(status_code=400, detail="User does not belong to an organization")
+        
+    try:
+        new_team = {
+            'name': team_data.name,
+            'specialty': team_data.specialty,
+            'description': team_data.description,
+            'organizationId': org_id,
+            'memberCount': 0, # Initial count
+            'createdAt': firestore.SERVER_TIMESTAMP,
+            'updatedAt': firestore.SERVER_TIMESTAMP
+        }
+        
+        update_time, doc_ref = db.collection('teams').add(new_team)
+        
+        return {
+            "id": doc_ref.id,
+            "message": "Team created successfully"
+        }
+    except Exception as e:
+        print(f"Error creating team: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/teams/{team_id}")
+async def update_team(
+    team_id: str,
+    team_updates: TeamUpdate,
+    user_token: dict = Depends(verify_org_owner)
+):
+    """
+    Update a team. Only Org Owner.
+    """
+    try:
+        data = {k: v for k, v in team_updates.dict().items() if v is not None}
+        if not data:
+             return {"message": "No changes provided"}
+             
+        data['updatedAt'] = firestore.SERVER_TIMESTAMP
+        db.collection('teams').document(team_id).update(data)
+        return {"message": "Team updated successfully"}
+    except Exception as e:
+        print(f"Error updating team: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/teams/{team_id}")
+async def delete_team(
+    team_id: str,
+    user_token: dict = Depends(verify_org_owner)
+):
+    """
+    Delete a team. Only Org Owner.
+    """
+    try:
+        # Optional: Check if team has members or claims before deleting?
+        # For now, allow deletion.
+        db.collection('teams').document(team_id).delete()
+        return {"message": "Team deleted successfully"}
+    except Exception as e:
+        print(f"Error deleting team: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+

@@ -8,6 +8,8 @@ import ClaimsListPage from './pages/ClaimsListPage';
 import ClaimDetailPage from './pages/ClaimDetailPage';
 import TeamsPage from './pages/TeamsPage';
 import OrganizationPage from './pages/OrganizationPage';
+import UsersPage from './pages/UsersPage';
+import ProfilePage from './pages/ProfilePage';
 import FirestoreDebugPage from './pages/FirestoreDebugPage';
 import SignupPage from './pages/SignupPage';
 import OnboardingPage from './pages/OnboardingPage';
@@ -64,9 +66,19 @@ function App() {
             }
           />
           <Route
+            path="/users"
+            element={
+              <ProtectedRoute allowedRoles={['org_owner', 'manager_admin', 'manager']}>
+                <Layout>
+                  <UsersPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/teams"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['org_owner', 'manager_admin', 'manager', 'team_member']}>
                 <Layout>
                   <TeamsPage />
                 </Layout>
@@ -76,9 +88,19 @@ function App() {
           <Route
             path="/organization"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['org_owner', 'manager_admin']}>
                 <Layout>
                   <OrganizationPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute allowedRoles={null}> {/* Null means allowed for all auth users */}
+                <Layout>
+                  <ProfilePage />
                 </Layout>
               </ProtectedRoute>
             }
