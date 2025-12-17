@@ -72,15 +72,17 @@ export function useFirebaseAuth() {
     };
 
     const login = async (email, password) => {
+        setLoading(true); // Start loading immediately to prevent race conditions
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            // The onAuthStateChanged listener will handle state update
+            // The onAuthStateChanged listener will handle state update & setting loading to false
             return {
                 success: true,
                 user: userCredential.user
             };
         } catch (error) {
             console.error('Login error:', error);
+            setLoading(false); // Only reset loading on error (success handled by auth listener)
             return { success: false, error: error.message };
         }
     };

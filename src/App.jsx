@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import ClaimsListPage from './pages/ClaimsListPage';
 import ClaimDetailPage from './pages/ClaimDetailPage';
 import TeamsPage from './pages/TeamsPage';
+import TeamDetailsPage from './pages/TeamDetailsPage';
 import OrganizationPage from './pages/OrganizationPage';
 import UsersPage from './pages/UsersPage';
 import ProfilePage from './pages/ProfilePage';
@@ -71,6 +72,16 @@ function App() {
               <ProtectedRoute allowedRoles={['owner', 'admin', 'manager']}>
                 <Layout>
                   <UsersPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teams/:id"
+            element={
+              <ProtectedRoute allowedRoles={['owner', 'admin', 'manager', 'member']}>
+                <Layout>
+                  <TeamDetailsPage />
                 </Layout>
               </ProtectedRoute>
             }

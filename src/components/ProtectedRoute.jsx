@@ -1,8 +1,8 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function ProtectedRoute({ children, allowedRoles }) {
-    const { isAuthenticated, loading, user } = useAuth();
+export default function ProtectedRoute({ children, allowedRoles, requiredPermission }) {
+    const { isAuthenticated, loading, user, hasPermission } = useAuth();
 
     if (loading) {
         return (
@@ -19,7 +19,13 @@ export default function ProtectedRoute({ children, allowedRoles }) {
         return <Navigate to="/login" replace />;
     }
 
+    // Role-based check (Legacy/Course grain)
     if (allowedRoles && !allowedRoles.includes(user?.role)) {
+        return <Navigate to="/dashboard" replace />;
+    }
+
+    // Permission-based check (Fine grain)
+    if (requiredPermission && !hasPermission(requiredPermission)) {
         return <Navigate to="/dashboard" replace />;
     }
 

@@ -85,6 +85,10 @@ export const getTeams = async () => {
     return apiCall("/teams", "GET");
 };
 
+export const getTeam = async (teamId) => {
+    return apiCall(`/teams/${teamId}`, "GET");
+};
+
 export const createTeam = async (teamData) => {
     // teamData: { name, specialty, description }
     return apiCall("/teams", "POST", teamData);

@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "emulators": "firebase emulators:start --import=./emulator-data --export-on-exit",
     "seed": "node scripts/seedEmulator.js",
-    "dev:full": "concurrently \"npm run emulators\" \"npm run dev\""
+    "backend": "export FIRESTORE_EMULATOR_HOST=\"127.0.0.1:8080\" && export FIREBASE_AUTH_EMULATOR_HOST=\"127.0.0.1:9099\" && export GCLOUD_PROJECT=\"demo-gamut-claims\" && ./backend/venv/bin/uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload",
+    "dev:full": "concurrently \"npm run emulators\" \"npm run backend\" \"npm run dev\"",
+    "stop:backend": "lsof -ti:8000 | xargs -r kill -9",
+    "stop:emulators": "lsof -ti:8080,9099,4000,4400,4500 | xargs -r kill -9",
+    "stop:all": "npm run stop:backend && npm run stop:emulators && lsof -ti:5173,5174 | xargs -r kill -9"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",

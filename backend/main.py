@@ -5,6 +5,7 @@ from typing import Optional, List
 import firebase_admin
 from firebase_admin import credentials, auth, firestore
 import os
+from rbac import ROLES, PERMISSIONS, has_permission, ROLE_CREATION_HIERARCHY
 
 # Initialize Firebase Admin
 if not firebase_admin._apps:
@@ -90,7 +91,10 @@ async def verify_admin(user_token: dict = Depends(verify_token)):
     user = auth.get_user(uid)
     role = user.custom_claims.get('role') if user.custom_claims else None
     
-    if role not in ['owner', 'admin']:
+    # Check if role has general admin capabilities or is specifically Owner/Admin
+    # Using permission 'manage_all_users' as a proxy for generic 'admin' rights in some contexts,
+    # or sticking to strict role checks where necessary.
+    if role not in [ROLES.OWNER, ROLES.ADMIN]:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     
     return user_token
@@ -103,7 +107,7 @@ async def verify_owner(user_token: dict = Depends(verify_token)):
     user = auth.get_user(uid)
     role = user.custom_claims.get('role') if user.custom_claims else None
     
-    if role != 'owner':
+    if role != ROLES.OWNER:
         raise HTTPException(status_code=403, detail="Requires Owner permissions")
     
     return user_token
@@ -122,7 +126,7 @@ async def signup(user: UserSignup):
     Otherwise, user is 'pending' (or 'member' if strictness relaxed).
     """
     try:
-        role = 'owner'
+        role = ROLES.OWNER
 
         # Create Auth User
         user_record = auth.create_user(
@@ -183,14 +187,8 @@ async def create_user(
 
     # Role Hierarchy Check
     allowed_roles = []
-    # Role Hierarchy Check
-    allowed_roles = []
-    if creator_role == 'owner':
-        allowed_roles = ['admin', 'manager', 'lead', 'member'] # Expanded roles
-    elif creator_role == 'admin':
-        allowed_roles = ['manager', 'lead', 'member']
-    elif creator_role == 'manager':
-        allowed_roles = ['member']
+    # Role Hierarchy Check using RBAC Config
+    allowed_roles = ROLE_CREATION_HIERARCHY.get(creator_role, [])
     
     if new_user.role not in allowed_roles:
          raise HTTPException(
@@ -296,7 +294,7 @@ async def list_users(user_token: dict = Depends(verify_token)):
         query = db.collection('users').where('organizationId', '==', org_id)
 
         # Role-based filtering
-        if role == 'team_member':
+        if role == ROLES.MEMBER or role == ROLES.LEAD: # Treat leads same as members for listing (or maybe they see all team?)
             if not team_id:
                 # If member has no team, they see no one (or just themselves?)
                 # Returning empty list or just themselves is safer.
@@ -379,12 +377,14 @@ async def admin_update_user(
         caller_role = caller_user.custom_claims.get('role') if caller_user.custom_claims else 'member'
         
         # Simple hierarchy check
-        if target_role == 'owner' and caller_role != 'owner':
+        if target_role == ROLES.OWNER and caller_role != ROLES.OWNER:
              raise HTTPException(status_code=403, detail="Cannot edit Organization Owner")
         
         if updates.get('role'):
-             if caller_role != 'owner' and updates['role'] in ['owner', 'admin']:
-                  raise HTTPException(status_code=403, detail="Insufficient permissions to assign this role")
+             # Check if caller can assign this role
+             allowed = ROLE_CREATION_HIERARCHY.get(caller_role, [])
+             if updates['role'] not in allowed:
+                  raise HTTPException(status_code=403, detail=f"Insufficient permissions to assign role {updates['role']}")
 
              # Update auth claims
              current_claims = target_user.custom_claims or {}
@@ -605,6 +605,64 @@ async def list_teams(user_token: dict = Depends(verify_token)):
         return teams
     except Exception as e:
         print(f"Error listing teams: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/teams/{team_id}")
+async def get_team(
+    team_id: str,
+    user_token: dict = Depends(verify_token)
+):
+    """
+    Get a single team by ID.
+    - Members: Can only see their own team (or maybe all teams? existing list_teams allows all in org).
+      Let's allow reading any team in the org for parity with list_teams.
+    """
+    try:
+        uid = user_token['uid']
+        user = auth.get_user(uid)
+        org_id = user.custom_claims.get('organizationId')
+        
+        if not org_id:
+            raise HTTPException(status_code=403, detail="User not in organization")
+
+        doc_ref = db.collection('teams').document(team_id)
+        doc = doc_ref.get()
+        
+        if not doc.exists:
+            raise HTTPException(status_code=404, detail="Team not found")
+            
+        data = doc.to_dict()
+        data['id'] = doc.id
+        
+        # Verify Org ID Match
+        if data.get('organizationId') != org_id:
+             raise HTTPException(status_code=403, detail="Team belongs to another organization")
+             
+        # Optional: Hydrate Roster?
+        # The frontend expects a 'roster' array. The existing 'list_teams' does NOT provide it.
+        # But 'TeamsPage.jsx' did client-side join.
+        # To make 'TeamDetailsPage.jsx' work as written, we should hydrate the roster here or frontend needs to fetch users.
+        # My implementation of TeamDetailsPage checks for team.roster.
+        # It's cleaner to fetch users here.
+        
+        roster = []
+        users_ref = db.collection('users').where('teamId', '==', team_id).stream()
+        for user_doc in users_ref:
+            udata = user_doc.to_dict()
+            roster.append({
+                "uid": user_doc.id,
+                "displayName": udata.get('displayName'),
+                "email": udata.get('email'),
+                "role": udata.get('role'),
+                "jobTitle": udata.get('jobTitle')
+            })
+            
+        data['roster'] = roster
+        
+        return data
+
+    except Exception as e:
+        print(f"Error fetching team: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/teams")

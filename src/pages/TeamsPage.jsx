@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Users, Edit2, Briefcase, TrendingUp } from 'lucide-react';
 import { getTeams, createTeam, deleteTeam, updateTeam, apiCall } from '../services/api';
 import Modal from '../components/Modal';
@@ -7,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreClaims, useFirestoreTeams } from '../hooks/useFirestore';
 
 export default function TeamsPage() {
+    const navigate = useNavigate();
     const { user, isManager, userTeamId, isAdmin } = useAuth();
 
     // Stats Data
@@ -251,10 +253,10 @@ export default function TeamsPage() {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => { setSelectedTeam(team); setIsRosterModalOpen(true); }}
+                                    onClick={() => navigate(`/teams/${team.id}`)}
                                     className="text-xs text-primary-400 hover:text-primary-300 hover:underline"
                                 >
-                                    View Roster
+                                    View Details
                                 </button>
                             </div>
                         </div>

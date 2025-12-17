@@ -4,6 +4,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // Helper functionality
+    // NOTE: These rules are loosely coupled with src/config/permissions.js and backend/rbac.py.
+    // When updating roles, ensure these rules are also updated to reflect the new logic.
     function isAuthenticated() {
       return request.auth != null;
     }
