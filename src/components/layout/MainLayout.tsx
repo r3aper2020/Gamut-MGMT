@@ -61,24 +61,98 @@ const SidebarContextSwitcher: React.FC<{
     activeDepartmentId: string | null;
     setActiveDepartmentId: (id: string | null) => void;
     userRole?: string;
-}> = ({ organization, offices, departments, activeOfficeId, activeDepartmentId, setActiveDepartmentId, userRole }) => {
+    userProfile?: any;
+}> = ({ organization, offices, departments, activeOfficeId, activeDepartmentId, setActiveDepartmentId, userRole, userProfile }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [expandedOfficeId, setExpandedOfficeId] = useState<string | null>(null);
     const navigate = useNavigate();
     const activeOffice = offices.find(o => o.id === activeOfficeId);
     const activeDepartment = departments.find(d => d.id === activeDepartmentId);
 
+    // Sync expanded state likely to active office on mount/change
+    useEffect(() => {
+        if (activeOfficeId) {
+            setExpandedOfficeId(activeOfficeId);
+        }
+    }, [activeOfficeId]);
+
     const handleSwitch = (officeId: string | null, departmentId: string | null = null) => {
         if (officeId) {
             setActiveDepartmentId(departmentId);
-
-            // If switching directly to a department, maybe go to Dept page? 
-            // For now, stick to Dashboard but with filtered context
             navigate(`/office/${officeId}/dashboard`);
         } else {
             setActiveDepartmentId(null);
             navigate('/');
         }
         setIsOpen(false);
+    };
+
+    const toggleExpansion = (officeId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setExpandedOfficeId(prev => prev === officeId ? null : officeId);
+    };
+
+    const renderOfficeContent = (o: any) => {
+        let officeDepts = departments.filter(d => d.officeId === o.id);
+
+        if (userRole === 'MEMBER' && userProfile?.departmentId) {
+            officeDepts = officeDepts.filter(d => d.id === userProfile.departmentId);
+        }
+
+        const isActiveOffice = activeOfficeId === o.id;
+        // "Overview" is active if we are in this office but NO department is selected
+        const isOverviewActive = isActiveOffice && !activeDepartmentId;
+
+        return (
+            <div style={{ paddingLeft: '12px', marginTop: '4px', marginBottom: '8px' }}>
+                <button
+                    onClick={() => handleSwitch(o.id, null)}
+                    style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        background: isOverviewActive ? 'rgba(192, 132, 252, 0.1)' : 'transparent',
+                        border: 'none',
+                        borderRadius: '10px',
+                        color: isOverviewActive ? '#c084fc' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.2s ease',
+                        marginBottom: '4px'
+                    }}
+                >
+                    <MapPin size={14} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Office Overview</span>
+                </button>
+                <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0', opacity: 0.5 }} />
+                {officeDepts.map(d => (
+                    <button
+                        key={d.id}
+                        onClick={() => handleSwitch(o.id, d.id)}
+                        style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            background: activeDepartmentId === d.id ? 'rgba(0, 242, 255, 0.1)' : 'transparent',
+                            border: activeDepartmentId === d.id ? '1px solid rgba(0, 242, 255, 0.3)' : '1px solid transparent',
+                            borderRadius: '10px',
+                            color: activeDepartmentId === d.id ? 'var(--accent-electric)' : 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'all 0.2s ease',
+                            boxShadow: activeDepartmentId === d.id ? '0 0 10px rgba(0, 242, 255, 0.1)' : 'none'
+                        }}
+                    >
+                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'currentColor', opacity: activeDepartmentId === d.id ? 1 : 0.5 }} />
+                        <span style={{ fontSize: '0.75rem', fontWeight: activeDepartmentId === d.id ? 700 : 500 }}>{d.name}</span>
+                    </button>
+                ))}
+            </div>
+        );
     };
 
     return (
@@ -104,13 +178,13 @@ const SidebarContextSwitcher: React.FC<{
                     width: '36px',
                     height: '36px',
                     borderRadius: '10px',
-                    background: activeOfficeId ? 'rgba(0, 242, 255, 0.1)' : 'linear-gradient(135deg, var(--accent-primary), var(--accent-electric))',
+                    background: activeDepartmentId ? 'rgba(0, 242, 255, 0.1)' : 'rgba(192, 132, 252, 0.1)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: activeOfficeId ? 'var(--accent-electric)' : '#fff',
+                    color: activeDepartmentId ? 'var(--accent-electric)' : '#c084fc',
                     flexShrink: 0,
-                    boxShadow: activeOfficeId ? 'none' : '0 0 15px rgba(0, 242, 255, 0.2)'
+                    boxShadow: activeDepartmentId ? '0 0 15px rgba(0, 242, 255, 0.2)' : 'none'
                 }}>
                     {activeOfficeId ? <MapPin size={18} /> : <Globe size={18} />}
                 </div>
@@ -167,10 +241,10 @@ const SidebarContextSwitcher: React.FC<{
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '10px',
-                                            background: !activeOfficeId ? 'rgba(0, 242, 255, 0.1)' : 'transparent',
+                                            background: !activeOfficeId ? 'rgba(192, 132, 252, 0.1)' : 'transparent',
                                             border: 'none',
                                             borderRadius: '10px',
-                                            color: !activeOfficeId ? 'var(--accent-electric)' : 'var(--text-secondary)',
+                                            color: !activeOfficeId ? '#c084fc' : 'var(--text-secondary)',
                                             cursor: 'pointer',
                                             textAlign: 'left',
                                             transition: 'all 0.2s ease'
@@ -183,131 +257,62 @@ const SidebarContextSwitcher: React.FC<{
                                 <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0' }} />
 
                                 {offices.map(o => {
+                                    const isExpanded = expandedOfficeId === o.id;
                                     const isActiveOffice = activeOfficeId === o.id;
-                                    const officeDepts = departments.filter(d => d.officeId === o.id);
 
                                     return (
                                         <div key={o.id}>
-                                            <button
-                                                onClick={() => handleSwitch(o.id, null)}
+                                            <div
                                                 style={{
                                                     width: '100%',
                                                     padding: '10px 12px',
                                                     display: 'flex',
                                                     alignItems: 'center',
+                                                    justifyContent: 'space-between',
                                                     gap: '10px',
-                                                    background: (isActiveOffice && !activeDepartmentId) ? 'rgba(0, 242, 255, 0.1)' : 'transparent',
-                                                    border: 'none',
+                                                    background: isActiveOffice ? 'rgba(192, 132, 252, 0.1)' : 'transparent', // Highlight if active office
                                                     borderRadius: '10px',
-                                                    color: (isActiveOffice && !activeDepartmentId) ? 'var(--accent-electric)' : 'var(--text-secondary)',
+                                                    color: isActiveOffice ? '#c084fc' : 'var(--text-secondary)',
                                                     cursor: 'pointer',
-                                                    textAlign: 'left',
                                                     transition: 'all 0.2s ease'
                                                 }}
+                                                // Main Click -> Navigate to Office Global
+                                                onClick={() => handleSwitch(o.id, null)}
                                             >
-                                                <MapPin size={14} />
-                                                <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>{o.name}</span>
-                                            </button>
-
-                                            {/* Nested Departments for Active Office */}
-                                            {isActiveOffice && (
-                                                <div style={{ marginTop: '2px', marginBottom: '2px' }}>
-                                                    {officeDepts.map(d => (
-                                                        <button
-                                                            key={d.id}
-                                                            onClick={() => handleSwitch(o.id, d.id)}
-                                                            style={{
-                                                                width: '100%',
-                                                                padding: '8px 12px 8px 36px', // Indented for hierarchy
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: '10px',
-                                                                background: activeDepartmentId === d.id ? 'rgba(234, 179, 8, 0.1)' : 'transparent',
-                                                                border: '1px solid',
-                                                                borderColor: activeDepartmentId === d.id ? 'rgba(234, 179, 8, 0.3)' : 'transparent',
-                                                                borderRadius: '10px',
-                                                                color: activeDepartmentId === d.id ? '#fca5a5' : 'var(--text-secondary)',
-                                                                cursor: 'pointer',
-                                                                textAlign: 'left',
-                                                                transition: 'all 0.2s ease',
-                                                                boxShadow: activeDepartmentId === d.id ? '0 0 10px rgba(234, 179, 8, 0.1)' : 'none'
-                                                            }}
-                                                        >
-                                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'currentColor', opacity: activeDepartmentId === d.id ? 1 : 0.5 }} />
-                                                            <span style={{ fontSize: '0.8125rem', fontWeight: activeDepartmentId === d.id ? 700 : 500 }}>{d.name}</span>
-                                                        </button>
-                                                    ))}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <MapPin size={14} />
+                                                    <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>{o.name}</span>
                                                 </div>
-                                            )}
+
+                                                {/* Chevron Click -> Toggle Expansion Only */}
+                                                <div
+                                                    onClick={(e) => toggleExpansion(o.id, e)}
+                                                    style={{
+                                                        padding: '4px',
+                                                        margin: '-4px', // Increase hit area
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        borderRadius: '4px'
+                                                    }}
+                                                >
+                                                    <ChevronDown size={12} style={{
+                                                        transform: isExpanded ? 'rotate(180deg)' : 'none',
+                                                        transition: 'transform 0.2s ease',
+                                                        opacity: 0.7
+                                                    }} />
+                                                </div>
+                                            </div>
+
+                                            {/* Nested Content (Depts Only) */}
+                                            {isExpanded && renderOfficeContent(o)}
                                         </div>
                                     );
                                 })}
                             </>
                         ) : (
                             /* --- SINGLE OFFICE / MANAGER VIEW (FLATTENED) --- */
-                            /* This mimics the Owner dropdown but swapping Offices for Departments */
-                            (() => {
-                                const o = offices[0]; // The single assigned office
-                                if (!o) return <div style={{ padding: '12px', color: 'var(--text-muted)' }}>No Assignment</div>;
-
-                                const officeDepts = departments.filter(d => d.officeId === o.id);
-
-                                return (
-                                    <>
-                                        {/* 1. Office Overview (The "Global" for Managers) */}
-                                        <button
-                                            onClick={() => handleSwitch(o.id, null)}
-                                            style={{
-                                                width: '100%',
-                                                padding: '10px 12px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '10px',
-                                                background: !activeDepartmentId ? 'rgba(0, 242, 255, 0.1)' : 'transparent',
-                                                border: 'none', // Standardized to match Global button
-                                                borderRadius: '10px',
-                                                color: !activeDepartmentId ? 'var(--accent-electric)' : 'var(--text-secondary)',
-                                                cursor: 'pointer',
-                                                textAlign: 'left',
-                                                transition: 'all 0.2s ease'
-                                            }}
-                                        >
-                                            <MapPin size={14} />
-                                            <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>Office Overview</span>
-                                        </button>
-
-                                        <div style={{ height: '1px', background: 'var(--border-color)', margin: '4px 0' }} />
-
-                                        {/* 2. List of Departments (The "Branches" for Managers) */}
-                                        {officeDepts.map(d => (
-                                            <button
-                                                key={d.id}
-                                                onClick={() => handleSwitch(o.id, d.id)}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '10px 12px', // Match owner layout sizing
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '10px',
-                                                    // Removed marginTop to match Owner view
-                                                    background: activeDepartmentId === d.id ? 'rgba(234, 179, 8, 0.1)' : 'transparent',
-                                                    border: '1px solid',
-                                                    borderColor: activeDepartmentId === d.id ? 'rgba(234, 179, 8, 0.3)' : 'transparent',
-                                                    borderRadius: '10px',
-                                                    color: activeDepartmentId === d.id ? '#fca5a5' : 'var(--text-secondary)',
-                                                    cursor: 'pointer',
-                                                    textAlign: 'left',
-                                                    transition: 'all 0.2s ease',
-                                                    boxShadow: activeDepartmentId === d.id ? '0 0 10px rgba(234, 179, 8, 0.1)' : 'none'
-                                                }}
-                                            >
-                                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'currentColor', opacity: activeDepartmentId === d.id ? 1 : 0.5 }} />
-                                                <span style={{ fontSize: '0.8125rem', fontWeight: activeDepartmentId === d.id ? 700 : 500 }}>{d.name}</span>
-                                            </button>
-                                        ))}
-                                    </>
-                                );
-                            })()
+                            activeOffice && renderOfficeContent(activeOffice)
                         )}
                     </div >
                 </>
@@ -337,14 +342,11 @@ export const MainLayout: React.FC<{ children: ReactNode }> = ({ children }) => {
             setActiveOfficeId(urlOfficeId);
         } else {
             setActiveOfficeId(null);
+            // DO NOT reset department here, as we might want to persist it or let other logic handle global reset
         }
     }, [urlOfficeId]);
 
-    const effectiveOfficeId = urlOfficeId; // Renamed to avoid collision if needed, or just use context variable.
-    // Actually, let's just use the context variable 'activeOfficeId' for consistency, 
-    // but the previous code used this local var to drive the nav logic.
-    // If we rely on context, there might be a split second flicker.
-    // Let's rely on the URL param for "current view" logic to be instant.
+    const effectiveOfficeId = urlOfficeId;
 
     const activeOffice = offices.find(o => o.id === effectiveOfficeId);
 
@@ -411,6 +413,7 @@ export const MainLayout: React.FC<{ children: ReactNode }> = ({ children }) => {
                     activeDepartmentId={activeDepartmentId} // Pass props
                     setActiveDepartmentId={setActiveDepartmentId} // Pass props
                     userRole={profile?.role}
+                    userProfile={profile}
                 />
 
                 <nav style={{ flex: 1 }}>
@@ -501,13 +504,13 @@ export const MainLayout: React.FC<{ children: ReactNode }> = ({ children }) => {
                             alignItems: 'center',
                             gap: '8px',
                             padding: '6px 14px',
-                            background: activeDepartmentId ? 'rgba(234, 179, 8, 0.1)' : 'rgba(0, 242, 255, 0.05)', // Yellow tint for deep department dive
+                            background: activeDepartmentId ? 'rgba(0, 242, 255, 0.1)' : 'rgba(192, 132, 252, 0.1)',
                             border: '1px solid',
-                            borderColor: activeDepartmentId ? 'rgba(234, 179, 8, 0.2)' : 'rgba(0, 242, 255, 0.15)',
+                            borderColor: activeDepartmentId ? 'rgba(0, 242, 255, 0.3)' : 'rgba(192, 132, 252, 0.3)',
                             borderRadius: '100px',
                             fontSize: '0.75rem',
                             fontWeight: 700,
-                            color: activeDepartmentId ? '#fca5a5' : 'var(--accent-electric)', // Different text color for emphasis
+                            color: activeDepartmentId ? 'var(--accent-electric)' : '#c084fc',
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
                             backdropFilter: 'blur(10px)',
