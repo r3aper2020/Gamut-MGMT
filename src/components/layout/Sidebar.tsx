@@ -1,9 +1,10 @@
 import React from 'react';
 import { LogOut } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
-import { type SidebarItemProps, SidebarItem } from './SidebarItem';
-import { SidebarContextSwitcher } from './SidebarContextSwitcher';
-import { type Office, type Department, type Organization, type UserProfile } from '@/types';
+import { type SidebarItemProps, SidebarItem } from '@/components/layout/SidebarItem';
+import { SidebarContextSwitcher } from '@/components/layout/SidebarContextSwitcher';
+import { type Office, type Department, type Organization } from '@/types/org';
+import { type UserProfile } from '@/types/team';
 
 interface SidebarProps {
     profile: UserProfile | null;

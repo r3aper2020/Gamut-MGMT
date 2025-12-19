@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Globe, ChevronDown } from 'lucide-react';
-import { type Office, type Department, type Organization, type UserProfile } from '@/types';
+import { type Office, type Department, type Organization } from '@/types/org';
+import { type UserProfile } from '@/types/team';
 
 interface SidebarContextSwitcherProps {
     organization: Organization | null;

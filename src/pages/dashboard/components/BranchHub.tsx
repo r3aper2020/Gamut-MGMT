@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../../lib/firebase';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useOrganization } from '../../../contexts/OrganizationContext';
-import { type Job, type Department } from '../../../types';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { type Department } from '@/types/org';
+import { type Job } from '@/types/jobs';
 import {
     Briefcase,
     Clock,

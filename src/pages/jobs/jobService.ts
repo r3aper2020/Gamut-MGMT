@@ -1,6 +1,6 @@
 import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { type Job } from '@/types';
+import { type Job } from '@/types/jobs';
 
 export const jobService = {
     subscribeToOrganizationJobs: (orgId: string, callback: (jobs: Job[]) => void) => {

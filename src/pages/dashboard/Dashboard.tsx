@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { type Job, type Office } from '@/types';
+import { type Job } from '@/types/jobs';
+import { type Office } from '@/types/org';
 import { jobService } from '@/pages/jobs/jobService';
 import {
     LayoutDashboard,

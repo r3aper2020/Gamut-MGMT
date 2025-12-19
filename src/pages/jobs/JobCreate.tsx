@@ -9,7 +9,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { type Office, type Department, type JobStatus } from '@/types';
+import { type Office, type Department } from '@/types/org';
+import { type JobStatus } from '@/types/jobs';
 import { ShieldAlert, Send } from 'lucide-react';
 
 export const JobCreate: React.FC<{ onClose: () => void }> = ({ onClose }) => {

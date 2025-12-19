@@ -1,4 +1,4 @@
-import { type UserProfile, type UserRole } from '../types';
+import { type UserProfile, type UserRole } from '@/types/team';
 
 export const PERMISSIONS = {
     // Org Management

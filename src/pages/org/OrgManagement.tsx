@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { type Office, type Department } from '@/types';
+import { type Office, type Department } from '@/types/org';
 import { Building2, MapPin, Plus, ListTree } from 'lucide-react';
 import { hasPermission } from '@/hooks/useRBAC';
 import { useOrganization } from '@/contexts/OrganizationContext';

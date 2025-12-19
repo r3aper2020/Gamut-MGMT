@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapPin, Shield, PlusCircle } from 'lucide-react';
-import { type Office, type Department, type UserProfile } from '@/types';
+import { type Office, type Department } from '@/types/org';
+import { type UserProfile } from '@/types/team';
 
 interface HeaderProps {
     activeOfficeId: string | null;

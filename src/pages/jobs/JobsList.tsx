@@ -8,12 +8,12 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { type Job } from '@/types';
+import { type Job } from '@/types/jobs';
 import { Briefcase, ChevronRight, Clock, MapPin } from 'lucide-react';
 
 import { useParams } from 'react-router-dom';
 
-export const JobsList: React.FC = () => {
+const JobsList: React.FC = () => {
     const { profile } = useAuth();
     const { activeOfficeId, activeDepartmentId } = useOrganization();
     const { officeId } = useParams(); // URL Precedence
@@ -39,8 +39,6 @@ export const JobsList: React.FC = () => {
             // Members only see assigned jobs (fallback if no officeId)
             q = query(q, where('assignedUserIds', 'array-contains', profile.uid));
         }
-        // Note: Owners/Admins seeing 'Global' (targetOfficeId === null) 
-        // will get all jobs for the org by default from the first query line.
 
         const unsubscribe = onSnapshot(q, (snap) => {
             setJobs(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job)));
@@ -50,7 +48,7 @@ export const JobsList: React.FC = () => {
         return () => unsubscribe();
     }, [profile, targetOfficeId, activeDepartmentId]);
 
-    if (loading) return <div>Loading jobs...</div>;
+    if (loading) return <div className="p-8 text-accent-electric animate-pulse">Loading jobs...</div>;
 
     return (
         <div className="flex flex-col gap-6">
@@ -112,3 +110,5 @@ export const JobsList: React.FC = () => {
         </div>
     );
 };
+
+export default JobsList;

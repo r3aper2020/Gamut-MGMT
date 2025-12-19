@@ -20,10 +20,10 @@ import { useParams } from 'react-router-dom';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { type Job } from '@/types';
-import { jobService } from './jobService';
-import { KanbanCard } from './components/kanban/KanbanCard';
-import { KanbanColumn, type Lane, type LaneId } from './components/kanban/KanbanColumn';
+import { type Job } from '@/types/jobs';
+import { jobService } from '@/pages/jobs/jobService';
+import { KanbanCard } from '@/pages/jobs/components/kanban/KanbanCard';
+import { KanbanColumn, type Lane, type LaneId } from '@/pages/jobs/components/kanban/KanbanColumn';
 
 export const OperationsBoard: React.FC = () => {
     const { profile } = useAuth();

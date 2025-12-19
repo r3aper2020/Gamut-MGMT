@@ -1,9 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { useAuth } from './AuthContext';
-import { type Office, type Organization, type Department } from '../types';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { type Office, type Organization, type Department } from '@/types/org';
 
 interface OrganizationContextType {
     organization: Organization | null;

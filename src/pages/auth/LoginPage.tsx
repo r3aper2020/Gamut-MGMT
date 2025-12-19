@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import type { UserRole } from '@/types';
+import type { UserRole } from '@/types/team';
 import { DEMO_USERS } from '@/demo/demoUsers';
 
 export const LoginPage: React.FC = () => {

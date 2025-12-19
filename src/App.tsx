@@ -5,7 +5,7 @@ import { OrganizationProvider } from '@/contexts/OrganizationContext';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { Dashboard } from '@/pages/dashboard/Dashboard';
-import { JobsList } from '@/pages/jobs/JobsList';
+import JobsList from '@/pages/jobs/JobsList';
 import { OrgManagement } from '@/pages/org/OrgManagement';
 
 // New Components

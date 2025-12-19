@@ -2,7 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Briefcase, AlertCircle } from 'lucide-react';
-import { type Job } from '@/types';
+import { type Job } from '@/types/jobs';
 
 interface KanbanCardProps {
     job: Job;

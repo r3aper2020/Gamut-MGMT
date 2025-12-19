@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useParams } from 'react-router-dom';
-import { type Department } from '@/types';
+import { type Department } from '@/types/org';
 import { Network } from 'lucide-react';
 
 export const OfficeDepartments: React.FC = () => {

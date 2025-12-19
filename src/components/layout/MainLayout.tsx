@@ -11,8 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useParams } from 'react-router-dom';
 import { JobCreate } from '@/pages/jobs/JobCreate';
-import { Sidebar } from './Sidebar';
-import { Header } from './Header';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { Header } from '@/components/layout/Header';
 
 export const MainLayout: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { profile, signOut } = useAuth();

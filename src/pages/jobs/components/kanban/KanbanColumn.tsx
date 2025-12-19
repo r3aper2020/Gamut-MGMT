@@ -1,8 +1,8 @@
 import React from 'react';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { MoreHorizontal } from 'lucide-react';
-import { type Job } from '@/types';
-import { KanbanCard } from './KanbanCard';
+import { type Job } from '@/types/jobs';
+import { KanbanCard } from '@/pages/jobs/components/kanban/KanbanCard';
 
 export type LaneId = 'unassigned' | 'in_progress' | 'review' | 'done';
 
