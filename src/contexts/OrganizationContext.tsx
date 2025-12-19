@@ -7,10 +7,13 @@ import { type Office, type Organization, type Department } from '../types';
 interface OrganizationContextType {
     organization: Organization | null;
     offices: Office[];
-    activeOfficeId: string | null; // null means 'Global' view for Owners/Admins
-    activeOffice?: Office; // Helper to get the actual office object
-    activeDepartment?: Department; // Helper for Member/Manager context
+    departments: Department[]; // Added
+    activeOfficeId: string | null;
+    activeOffice?: Office;
+    activeDepartmentId: string | null; // Added
+    activeDepartment?: Department;
     setActiveOfficeId: (id: string | null) => void;
+    setActiveDepartmentId: (id: string | null) => void; // Added
     loading: boolean;
 }
 
@@ -69,10 +72,30 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }, [profile?.orgId, profile?.role, profile?.officeId]);
 
     const activeOffice = offices.find(o => o.id === activeOfficeId);
-    const activeDepartment = departments.find(d => d.id === profile?.departmentId);
+
+    // Explicit Department Switching
+    const [manualDepartmentId, setManualDepartmentId] = useState<string | null>(null);
+    // Default to NULL (Global Office View) instead of profile.departmentId
+    const activeDepartmentId = manualDepartmentId;
+    const activeDepartment = departments.find(d => d.id === activeDepartmentId);
+
+    const setActiveDepartmentId = (id: string | null) => {
+        setManualDepartmentId(id);
+    };
 
     return (
-        <OrganizationContext.Provider value={{ organization, offices, activeOfficeId, activeOffice, activeDepartment, setActiveOfficeId, loading }}>
+        <OrganizationContext.Provider value={{
+            organization,
+            offices,
+            departments, // Expose departments list
+            activeOfficeId,
+            activeOffice,
+            activeDepartmentId,
+            activeDepartment,
+            setActiveOfficeId,
+            setActiveDepartmentId,
+            loading
+        }}>
             {children}
         </OrganizationContext.Provider>
     );

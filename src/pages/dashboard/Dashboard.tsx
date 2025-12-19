@@ -1,38 +1,32 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useOrganization } from '../../contexts/OrganizationContext';
 import { OwnerCommandCenter } from './components/OwnerCommandCenter';
-import { BranchHub } from './components/BranchHub';
-import { TeamOps } from './components/TeamOps';
-import { DailyPulse } from './components/DailyPulse';
+
+import { useNavigate } from 'react-router-dom';
 
 export const Dashboard: React.FC = () => {
     const { profile } = useAuth();
-    const { activeOfficeId } = useOrganization();
+    const navigate = useNavigate();
+
+    // Redirection Logic for Role-Based Home
+    useEffect(() => {
+        if (!profile) return;
+
+        // If Manager/Admin/Member logs in at root '/', send them to their Office Hub
+        if ((profile.role === 'DEPT_MANAGER' || profile.role === 'OFFICE_ADMIN' || profile.role === 'MEMBER') && profile.officeId) {
+            navigate(`/office/${profile.officeId}/dashboard`);
+        }
+    }, [profile, navigate]);
 
     if (!profile) return null;
 
-    // Owners and Admins can see either the Command Center (Global) or a specific Branch Hub
+    // Owners stay at Global Root
     if (profile.role === 'OWNER' || profile.role === 'ORG_ADMIN') {
-        if (activeOfficeId) {
-            return <BranchHub />;
-        }
         return <OwnerCommandCenter />;
     }
 
-    switch (profile.role) {
-        case 'OFFICE_ADMIN':
-            return <BranchHub />;
-        case 'DEPT_MANAGER':
-            return <TeamOps />;
-        case 'MEMBER':
-            return <DailyPulse />;
-        default:
-            return (
-                <div className="glass" style={{ padding: '40px', textAlign: 'center' }}>
-                    <h2 style={{ color: 'var(--text-muted)' }}>Access Level Unrecognized</h2>
-                    <p>Please contact your organization administrator.</p>
-                </div>
-            );
-    }
+
+
+    // Fallback while redirecting
+    return <div style={{ color: '#fff' }}>Redirecting to Workspace...</div>;
 };

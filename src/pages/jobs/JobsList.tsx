@@ -11,11 +11,16 @@ import { useOrganization } from '../../contexts/OrganizationContext';
 import { type Job } from '../../types';
 import { Briefcase, ChevronRight, Clock, MapPin } from 'lucide-react';
 
+import { useParams } from 'react-router-dom';
+
 export const JobsList: React.FC = () => {
     const { profile } = useAuth();
-    const { activeOfficeId } = useOrganization();
+    const { activeOfficeId, activeDepartmentId } = useOrganization();
+    const { officeId } = useParams(); // URL Precedence
     const [jobs, setJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const targetOfficeId = officeId || activeOfficeId;
 
     useEffect(() => {
         if (!profile) return;
@@ -23,13 +28,18 @@ export const JobsList: React.FC = () => {
         let q = query(collection(db, 'jobs'), where('orgId', '==', profile.orgId));
 
         // Organizational Immersion Filtering
-        if (activeOfficeId) {
-            q = query(q, where('officeId', '==', activeOfficeId));
+        if (targetOfficeId) {
+            q = query(q, where('officeId', '==', targetOfficeId));
+
+            // Department Context
+            if (activeDepartmentId) {
+                q = query(q, where('departmentId', '==', activeDepartmentId));
+            }
         } else if (profile.role === 'MEMBER') {
             // Members only see assigned jobs (fallback if no officeId)
             q = query(q, where('assignedUserIds', 'array-contains', profile.uid));
         }
-        // Note: Owners/Admins seeing 'Global' (activeOfficeId === null) 
+        // Note: Owners/Admins seeing 'Global' (targetOfficeId === null) 
         // will get all jobs for the org by default from the first query line.
 
         const unsubscribe = onSnapshot(q, (snap) => {
@@ -38,7 +48,7 @@ export const JobsList: React.FC = () => {
         });
 
         return () => unsubscribe();
-    }, [profile, activeOfficeId]);
+    }, [profile, targetOfficeId, activeDepartmentId]);
 
     if (loading) return <div>Loading jobs...</div>;
 

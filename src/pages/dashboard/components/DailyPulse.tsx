@@ -4,9 +4,6 @@ import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { type Job } from '../../../types';
 import {
-    Calendar,
-    Briefcase,
-    CheckCircle2,
     ArrowRight,
     Zap
 } from 'lucide-react';
@@ -23,7 +20,7 @@ export const DailyPulse: React.FC = () => {
         const q = query(
             collection(db, 'jobs'),
             where('orgId', '==', profile.orgId),
-            where('assignedUserIds', 'array-contains', profile.uid)
+            where('assignedUserIds', 'array-contains', profile.uid) // Simple filtering for now
         );
 
         const unsubscribe = onSnapshot(q, (snap) => {

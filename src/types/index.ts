@@ -41,7 +41,7 @@ export interface Department {
     createdAt: any;
 }
 
-export type JobStatus = 'FNOL' | 'MITIGATION' | 'RECONSTRUCTION' | 'CLOSEOUT';
+export type JobStatus = 'FNOL' | 'MITIGATION' | 'RECONSTRUCTION' | 'REVIEW' | 'CLOSEOUT';
 
 export interface Job {
     id: string;
