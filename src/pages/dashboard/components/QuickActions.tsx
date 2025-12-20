@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Users, FileText, Settings } from 'lucide-react';
+import { Plus, Users, FileText, Settings, Clock, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface QuickActionProps {
@@ -26,7 +26,14 @@ const QuickAction: React.FC<QuickActionProps> = ({ label, icon: Icon, to, color 
     </Link>
 );
 
-export const QuickActions: React.FC = () => {
+interface QuickActionsContainerProps {
+    role?: string;
+}
+
+export const QuickActions: React.FC<QuickActionsContainerProps> = ({ role }) => {
+    const isMember = role === 'MEMBER';
+    const isAdmin = role === 'OWNER' || role === 'ORG_ADMIN' || role === 'OFFICE_ADMIN';
+
     return (
         <div className="glass p-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -34,31 +41,60 @@ export const QuickActions: React.FC = () => {
                 Quick Actions
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <QuickAction
-                    label="New Claim"
-                    icon={Plus}
-                    to="/jobs/new"
-                    color="var(--accent-electric)"
-                />
-                <QuickAction
-                    label="Add Staff"
-                    icon={Users}
-                    to="/settings/team/new"
-                    color="var(--accent-primary)"
-                />
-                <QuickAction
-                    label="Reports"
-                    icon={FileText}
-                    to="/reports"
-                    color="var(--status-mitigation)"
-                />
-                {/* Placeholder for future action */}
-                <QuickAction
-                    label="Settings"
-                    icon={Settings}
-                    to="/settings"
-                    color="#fff"
-                />
+                {/* MEMBER ACTIONS */}
+                {isMember && (
+                    <>
+                        <QuickAction
+                            label="Clock In"
+                            icon={Clock}
+                            to="#"
+                            color="var(--accent-electric)"
+                        />
+                        <QuickAction
+                            label="Availability"
+                            icon={Calendar}
+                            to="#"
+                            color="var(--accent-primary)"
+                        />
+                    </>
+                )}
+
+                {/* ADMIN / MANAGER ACTIONS */}
+                {!isMember && (
+                    <QuickAction
+                        label="New Claim"
+                        icon={Plus}
+                        to="/jobs/new"
+                        color="var(--accent-electric)"
+                    />
+                )}
+
+                {isAdmin && (
+                    <QuickAction
+                        label="Add Staff"
+                        icon={Users}
+                        to="/settings/team/new"
+                        color="var(--accent-primary)"
+                    />
+                )}
+
+                {!isMember && (
+                    <QuickAction
+                        label="Reports"
+                        icon={FileText}
+                        to="/reports"
+                        color="var(--status-mitigation)"
+                    />
+                )}
+
+                {isAdmin && (
+                    <QuickAction
+                        label="Settings"
+                        icon={Settings}
+                        to="/settings"
+                        color="#fff"
+                    />
+                )}
             </div>
         </div>
     );

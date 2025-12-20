@@ -24,11 +24,7 @@ export const DepartmentDashboard: React.FC = () => {
         // --- ACCESS CONTROL ---
         const role = profile.role;
 
-        // 1. Members: STRICT DENY
-        if (role === 'MEMBER') {
-            navigate('/dashboard', { replace: true });
-            return;
-        }
+
 
         // 2. Dept Managers: STRICT SCOPE
         if (role === 'DEPT_MANAGER') {

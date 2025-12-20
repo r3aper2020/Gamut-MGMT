@@ -5,7 +5,7 @@ import {
     User
 } from 'lucide-react';
 import { StatCard } from '@/components/ui/StatCard';
-import { QuickActions } from './QuickActions';
+
 import { RecentActivity } from './RecentActivity';
 import { TasksWidget } from './TasksWidget';
 import { type Job, type Task } from '@/types/jobs';
@@ -53,7 +53,7 @@ export const PulseMember: React.FC<PulseMemberProps> = ({
 
                 {/* Left: Tasks & Actions */}
                 <div className="flex flex-col gap-6">
-                    <QuickActions />
+
                     <div className="flex-1">
                         <TasksWidget tasks={tasks} />
                     </div>
