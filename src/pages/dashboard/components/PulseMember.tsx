@@ -9,11 +9,11 @@ import { StatCard } from '@/components/ui/StatCard';
 import { RecentActivity } from './RecentActivity';
 // import { TasksWidget } from './TasksWidget';
 import { type Job } from '@/types/jobs';
-// import { type Task } from '@/types/jobs';
+import { type Task } from '@/types/jobs';
 
 export interface PulseMemberProps {
     jobs: Job[];
-    // tasks: Task[];
+    tasks: Task[];
     username: string;
 }
 

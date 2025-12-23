@@ -7,7 +7,7 @@ import {
     Clock
 } from 'lucide-react';
 import { type Job } from '@/types/jobs';
-// import { type Task } from '@/types/jobs';
+import { type Task } from '@/types/jobs';
 import { type DashboardMetrics } from '@/utils/dashboardMetrics';
 import { PipelineWidget } from './PipelineWidget';
 // import { TasksWidget } from './TasksWidget';
@@ -15,7 +15,7 @@ import { PipelineWidget } from './PipelineWidget';
 export interface PulseManagerProps {
     stats: DashboardMetrics;
     jobs: Job[];
-    // tasks: Task[];
+    tasks: Task[];
 }
 
 export const PulseManager: React.FC<PulseManagerProps> = ({

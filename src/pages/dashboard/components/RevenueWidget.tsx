@@ -8,8 +8,9 @@ interface RevenueWidgetProps {
 
 export const RevenueWidget: React.FC<RevenueWidgetProps> = ({ jobs }) => {
     // Calculate total revenue
+    // Calculate total revenue
     // Fix: access financials which might be undefined in older jobs if we didn't wipe DB completely
-    const totalRevenue = jobs.reduce((sum, job) => sum + ((job as any).financials?.revenue || 0), 0);
+    const totalRevenue = jobs.reduce((sum, job) => sum + (job.financials?.revenue || 0), 0);
 
     // Mock monthly trend for visualization (last 6 months)
     const trends = [40, 65, 55, 80, 70, 95]; // Percentages relative to max

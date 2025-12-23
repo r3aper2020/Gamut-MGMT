@@ -66,6 +66,12 @@ export interface Job {
     assignments: JobAssignments;
     details: JobDetails;
 
+    // Financials (Optional for now)
+    financials?: {
+        revenue: number;
+        [key: string]: any;
+    };
+
     assignedUserIds: string[]; // Keep for compatibility/queries (union of all assignments)
     createdBy: string;
     createdAt: any;

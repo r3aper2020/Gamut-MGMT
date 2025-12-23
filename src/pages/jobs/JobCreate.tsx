@@ -10,14 +10,15 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { type Office, type Department } from '@/types/org';
-import { type JobStatus } from '@/types/jobs';
+import { type JobStatus, type JobAssignments } from '@/types/jobs';
+import { type UserProfile } from '@/types/team';
 import { ShieldAlert, Info, Users, Building, X, FileText } from 'lucide-react';
 
 export const JobCreate: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const { profile } = useAuth();
     const [offices, setOffices] = useState<Office[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
-    const [orgUsers, setOrgUsers] = useState<any[]>([]); // For assignments
+    const [orgUsers, setOrgUsers] = useState<UserProfile[]>([]); // For assignments
     const [loading, setLoading] = useState(false);
 
     // --- FORM STATE ---
@@ -77,7 +78,7 @@ export const JobCreate: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         // Fetch Users (Simple fetch all for Org for now)
         const qUsers = query(collection(db, 'users'), where('orgId', '==', profile.orgId));
         const unsubUsers = onSnapshot(qUsers, (snap) => {
-            setOrgUsers(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            setOrgUsers(snap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile)));
         });
 
         return () => {
@@ -176,7 +177,6 @@ export const JobCreate: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     // Helper: Filter users by office (optional, strict) or just show all
-    // Let's filter by officeId if selected, else show all
     const availableUsers = officeId
         ? orgUsers.filter(u => !u.officeId || u.officeId === officeId) // Include unassigned or matching
         : orgUsers;
@@ -336,14 +336,14 @@ export const JobCreate: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                 <div key={field.key} className="space-y-1">
                                     <label className="text-[10px] font-bold text-text-muted uppercase">{field.label}</label>
                                     <select
-                                        value={(assignments as any)[field.key]}
+                                        value={assignments[field.key as keyof JobAssignments] || ''}
                                         onChange={(e) => handleAssignmentChange(field.key, e.target.value)}
                                         className="input-field appearance-none"
                                     >
                                         <option value="" className="bg-bg-tertiary">Unassigned</option>
                                         {availableUsers.map(u => (
-                                            <option key={u.id} value={u.id} className="bg-bg-tertiary">
-                                                {u.firstName} {u.lastName}
+                                            <option key={u.uid} value={u.uid} className="bg-bg-tertiary">
+                                                {u.displayName}
                                             </option>
                                         ))}
                                     </select>

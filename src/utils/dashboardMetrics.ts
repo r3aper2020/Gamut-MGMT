@@ -17,7 +17,7 @@ export interface DashboardMetrics {
 }
 
 // Helper to safely get Date object
-const getDate = (dateField: any): Date => {
+const getDate = (dateField: any): Date => { // eslint-disable-line @typescript-eslint/no-explicit-any
     if (!dateField) return new Date();
     if (dateField instanceof Timestamp) return dateField.toDate();
     if (dateField.seconds) return new Date(dateField.seconds * 1000); // Handle object-like timestamp
@@ -67,7 +67,7 @@ export const calculateMetrics = (jobs: Job[]): DashboardMetrics => {
 
             // Financials (simulated if missing)
             // Ideally strictly typed, but casting for now as per previous implementation patterns
-            const rev = (job as any).financials?.revenue || 0;
+            const rev = job.financials?.revenue || 0;
             totalActiveRevenue += rev;
             metrics.totalRevenue += rev;
 

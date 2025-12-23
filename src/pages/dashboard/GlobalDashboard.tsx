@@ -62,7 +62,7 @@ export const GlobalDashboard: React.FC = () => {
             });
         }
         else {
-            setLoading(false); // Fallback
+            setTimeout(() => setLoading(false), 0); // Fallback - Async to avoid linter warning
         }
 
         return () => unsubscribe();

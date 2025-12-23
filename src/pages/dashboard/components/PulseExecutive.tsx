@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { type Job } from '@/types/jobs';
-// import { type Task } from '@/types/jobs';
+import { type Task } from '@/types/jobs';
 import { type DashboardMetrics, formatCurrency } from '@/utils/dashboardMetrics';
 import { RevenueWidget } from './RevenueWidget';
 import { PipelineWidget } from './PipelineWidget';
@@ -29,7 +29,7 @@ interface PulseExecutiveProps {
     entities: HubPulseEntity[];
     entityType: 'OFFICE' | 'DEPARTMENT';
     jobs: Job[];
-    // tasks: Task[];
+    tasks: Task[];
     showRevenue?: boolean;
     showEntityGrid?: boolean;
 }
