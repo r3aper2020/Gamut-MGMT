@@ -67,6 +67,7 @@ export interface Job {
 
     dates?: {
         lossDate?: any;
+        fnolReceivedDate?: any;
     };
 
     // New Blocks

@@ -32,6 +32,7 @@ export const JobCreate: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
     // Core Data
     const [lossDate, setLossDate] = useState('');
+    const [fnolReceivedDate, setFnolReceivedDate] = useState('');
     const [lossCategory, setLossCategory] = useState('');
     const [carrier, setCarrier] = useState('');
     const [claimNumber, setClaimNumber] = useState('');
@@ -158,7 +159,8 @@ export const JobCreate: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     claimNumber
                 },
                 dates: {
-                    lossDate: lossDate ? new Date(lossDate) : null
+                    lossDate: lossDate ? new Date(lossDate) : null,
+                    fnolReceivedDate: fnolReceivedDate ? new Date(fnolReceivedDate) : null
                 },
                 assignments,
                 details: {
@@ -291,11 +293,11 @@ export const JobCreate: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-text-muted uppercase">Date of Loss</label>
+                                    <label className="text-[10px] font-bold text-text-muted uppercase">FNOL Received (Date & Time)</label>
                                     <input
-                                        type="date"
-                                        value={lossDate}
-                                        onChange={(e) => setLossDate(e.target.value)}
+                                        type="datetime-local"
+                                        value={fnolReceivedDate}
+                                        onChange={(e) => setFnolReceivedDate(e.target.value)}
                                         className="input-field"
                                     />
                                 </div>
@@ -307,6 +309,16 @@ export const JobCreate: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                             <div className="flex items-center gap-2 text-status-mitigation mb-4">
                                 <Building size={18} />
                                 <h3 className="text-sm font-black uppercase tracking-widest">Loss & Insurance</h3>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-text-muted uppercase">Date of Loss</label>
+                                <input
+                                    type="date"
+                                    value={lossDate}
+                                    onChange={(e) => setLossDate(e.target.value)}
+                                    className="input-field"
+                                />
                             </div>
 
                             <div className="space-y-1">

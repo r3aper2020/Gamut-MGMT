@@ -9,15 +9,18 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { type Job } from '@/types/jobs';
-import { Briefcase, ChevronRight, Clock, MapPin } from 'lucide-react';
+// Icons moved to JobRow component
 
+import { type UserProfile } from '@/types/team';
+import { JobRow } from './components/JobRow';
 import { useParams } from 'react-router-dom';
 
 const JobsList: React.FC = () => {
     const { profile } = useAuth();
-    const { activeOfficeId, activeDepartmentId } = useOrganization();
+    const { activeOfficeId, activeDepartmentId, departments } = useOrganization();
     const { officeId } = useParams(); // URL Precedence
     const [jobs, setJobs] = useState<Job[]>([]);
+    const [users, setUsers] = useState<UserProfile[]>([]);
     const [loading, setLoading] = useState(true);
 
     const targetOfficeId = officeId || activeOfficeId;
@@ -53,7 +56,16 @@ const JobsList: React.FC = () => {
             setLoading(false);
         });
 
-        return () => unsubscribe();
+        // Fetch Users for resolution
+        const qUsers = query(collection(db, 'users'), where('orgId', '==', profile.orgId));
+        const unsubscribeUsers = onSnapshot(qUsers, (snap) => {
+            setUsers(snap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile)));
+        });
+
+        return () => {
+            unsubscribe();
+            unsubscribeUsers();
+        };
     }, [profile, targetOfficeId, activeDepartmentId]);
 
     if (loading) return <div className="p-8 text-accent-electric animate-pulse">Loading jobs...</div>;
@@ -74,44 +86,12 @@ const JobsList: React.FC = () => {
                     </div>
                 ) : (
                     jobs.map(job => (
-                        <div
+                        <JobRow
                             key={job.id}
-                            className="glass p-5 flex flex-col md:flex-row items-start md:items-center gap-6 cursor-pointer hover:bg-white/5 transition-all group border border-white/5 hover:border-accent-electric/20"
-                        >
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg`}
-                                style={{ backgroundColor: `var(--status-${job.status.toLowerCase()})` }}
-                            >
-                                <Briefcase size={24} />
-                            </div>
-
-                            <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-1">
-                                    <h4 className="text-lg font-bold text-white group-hover:text-accent-electric transition-colors">{job.customer.name}</h4>
-                                    <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-md bg-white/5 text-text-secondary uppercase tracking-widest border border-white/10">
-                                        {job.status}
-                                    </span>
-                                </div>
-                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-text-muted text-sm">
-                                    <span className="flex items-center gap-1.5">
-                                        <MapPin size={14} className="text-accent-primary" /> {job.property.address}
-                                    </span>
-                                    <span className="flex items-center gap-1.5">
-                                        <Briefcase size={14} className="text-accent-primary" /> {job.insurance.carrier}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="text-left md:text-right mt-2 md:mt-0 font-sans">
-                                <div className="text-sm font-semibold text-text-secondary mb-1">
-                                    Claim: {job.insurance.claimNumber}
-                                </div>
-                                <div className="text-[0.65rem] text-text-muted flex items-center gap-1.5 md:justify-end font-medium">
-                                    <Clock size={12} /> Just now
-                                </div>
-                            </div>
-
-                            <ChevronRight className="hidden md:block text-text-muted group-hover:text-white transition-colors" />
-                        </div>
+                            job={job}
+                            departments={departments}
+                            users={users}
+                        />
                     ))
                 )}
             </div>
