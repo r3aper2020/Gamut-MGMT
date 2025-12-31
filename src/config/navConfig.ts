@@ -262,7 +262,7 @@ export const navConfig: NavItem[] = [
         label: 'Team',
         icon: Users,
         to: '/office/:officeId/department/:departmentId/team',
-        rolesAllowed: ['OWNER', 'ORG_ADMIN', 'OFFICE_ADMIN', 'DEPT_MANAGER'],
+        rolesAllowed: ['OWNER', 'ORG_ADMIN', 'OFFICE_ADMIN', 'DEPT_MANAGER', 'MEMBER'],
         context: ['department'],
         section: 'organize'
     },
