@@ -4,7 +4,8 @@ import {
     DragOverlay,
     closestCorners,
     KeyboardSensor,
-    PointerSensor,
+    MouseSensor,
+    TouchSensor,
     useSensor,
     useSensors,
     type DragStartEvent,
@@ -24,6 +25,7 @@ import { type Job } from '@/types/jobs';
 import { jobService } from '@/pages/jobs/jobService';
 import { KanbanCard } from '@/pages/jobs/components/kanban/KanbanCard';
 import { KanbanColumn, type Lane, type LaneId } from '@/pages/jobs/components/kanban/KanbanColumn';
+import { JobDetailsPane } from '@/pages/jobs/components/JobDetailsPane';
 
 export const OperationsBoard: React.FC = () => {
     const { profile } = useAuth();
@@ -31,6 +33,7 @@ export const OperationsBoard: React.FC = () => {
     const { offices, activeDepartmentId, activeDepartment } = useOrganization(); // Fetch offices list
     const [jobs, setJobs] = useState<Job[]>([]);
     const [activeDragItem, setActiveDragItem] = useState<Job | null>(null);
+    const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
 
     // Derive active office from URL params
     const activeOffice = officeId ? offices.find(o => o.id === officeId) : null;
@@ -100,7 +103,8 @@ export const OperationsBoard: React.FC = () => {
 
     // --- DnD Handlers ---
     const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
@@ -164,92 +168,117 @@ export const OperationsBoard: React.FC = () => {
 
     if (isReadOnly) {
         return (
-            <div className="flex flex-col h-[calc(100vh-140px)]">
-                <header className="mb-6 shrink-0">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <div className="flex items-center gap-2 text-accent-electric text-xs font-bold uppercase mb-2">
-                                <Users size={14} /> {activeDepartment ? `${activeOffice?.name} - ${activeDepartment.name}` : (activeOffice?.name || 'Operations Board')}
+            <div className="relative flex flex-col h-full overflow-hidden">
+                <div className="flex flex-col h-full">
+                    <header className="mb-6 shrink-0">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <div className="flex items-center gap-2 text-accent-electric text-xs font-bold uppercase mb-2">
+                                    <Users size={14} /> {activeDepartment ? `${activeOffice?.name} - ${activeDepartment.name}` : (activeOffice?.name || 'Operations Board')}
+                                </div>
+                                <h1 className="text-3xl font-extrabold m-0">Active Claims</h1>
                             </div>
-                            <h1 className="text-3xl font-extrabold m-0">Active Claims</h1>
-                        </div>
-                        <div className="flex gap-4">
-                            {/* Read Only Badge */}
-                            <div className="px-4 py-2 rounded-lg bg-white/5 text-sm text-text-secondary">
-                                Read Only
-                            </div>
-                            <div className="px-4 py-2 rounded-lg bg-white/5 text-sm text-text-secondary">
-                                Active Claims: <strong className="text-white">{jobs.length}</strong>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
-                <div className="flex gap-6 overflow-x-auto pb-4 h-full">
-                    {lanes.map(lane => (
-                        <div key={lane.id} className="flex flex-col min-w-[320px] h-full">
-                            <div className="mb-4 flex items-center justify-between px-2">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: lane.colors }} />
-                                    <h3 className="text-sm font-bold uppercase text-white m-0">{lane.title}</h3>
-                                    <span className="text-xs text-text-muted font-medium">{groupedJobs[lane.id].length}</span>
+                            <div className="flex gap-4">
+                                <div className="px-4 py-2 rounded-lg bg-white/5 text-sm text-text-secondary">
+                                    Read Only
+                                </div>
+                                <div className="px-4 py-2 rounded-lg bg-white/5 text-sm text-text-secondary">
+                                    Active Claims: <strong className="text-white">{jobs.length}</strong>
                                 </div>
                             </div>
-                            <div className="flex-1 bg-white/5 rounded-2xl p-3 flex flex-col gap-3">
-                                {groupedJobs[lane.id].map(job => (
-                                    <KanbanCard key={job.id} job={job} />
-                                ))}
-                                {groupedJobs[lane.id].length === 0 && (
-                                    <div className="h-24 border border-dashed border-white/10 rounded-xl flex items-center justify-center text-text-muted text-sm">
-                                        Empty
-                                    </div>
-                                )}
-                            </div>
                         </div>
-                    ))}
+                    </header>
+
+                    <div className="flex gap-6 overflow-x-auto pb-4 flex-1 min-h-0">
+                        {lanes.map(lane => (
+                            <div key={lane.id} className="flex flex-col min-w-[320px] h-full">
+                                <div className="mb-4 flex items-center justify-between px-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: lane.colors }} />
+                                        <h3 className="text-sm font-bold uppercase text-white m-0">{lane.title}</h3>
+                                        <span className="text-xs text-text-muted font-medium">{groupedJobs[lane.id].length}</span>
+                                    </div>
+                                </div>
+                                <div className="flex-1 bg-white/5 rounded-2xl p-3 flex flex-col gap-3">
+                                    {groupedJobs[lane.id].map(job => (
+                                        <KanbanCard
+                                            key={job.id}
+                                            job={job}
+                                            onClick={() => setSelectedJobId(job.id)}
+                                        />
+                                    ))}
+                                    {groupedJobs[lane.id].length === 0 && (
+                                        <div className="h-24 border border-dashed border-white/10 rounded-xl flex items-center justify-center text-text-muted text-sm">
+                                            Empty
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
+
+                {/* Side Panel Overlay */}
+                {selectedJobId && (
+                    <JobDetailsPane
+                        jobId={selectedJobId}
+                        onClose={() => setSelectedJobId(null)}
+                    />
+                )}
             </div>
         );
     }
 
     return (
-        <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-        >
-            <div className="flex flex-col h-[calc(100vh-140px)]">
-                <header className="mb-6 shrink-0">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <div className="flex items-center gap-2 text-accent-electric text-xs font-bold uppercase mb-2">
-                                <Users size={14} /> {activeDepartment ? `${activeOffice?.name} - ${activeDepartment.name}` : (activeOffice?.name || 'Operations Board')}
+        <div className="relative flex flex-col h-full overflow-hidden">
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+            >
+                <div className="flex flex-col h-full">
+                    <header className="mb-6 shrink-0">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <div className="flex items-center gap-2 text-accent-electric text-xs font-bold uppercase mb-2">
+                                    <Users size={14} /> {activeDepartment ? `${activeOffice?.name} - ${activeDepartment.name}` : (activeOffice?.name || 'Operations Board')}
+                                </div>
+                                <h1 className="text-3xl font-extrabold m-0">Active Claims</h1>
                             </div>
-                            <h1 className="text-3xl font-extrabold m-0">Active Claims</h1>
-                        </div>
-                        <div className="flex gap-4">
-                            <div className="px-4 py-2 rounded-lg bg-white/5 text-sm text-text-secondary">
-                                Active Claims: <strong className="text-white">{jobs.length}</strong>
+                            <div className="flex gap-4">
+                                <div className="px-4 py-2 rounded-lg bg-white/5 text-sm text-text-secondary">
+                                    Active Claims: <strong className="text-white">{jobs.length}</strong>
+                                </div>
                             </div>
                         </div>
+                    </header>
+
+                    <div className="flex gap-6 overflow-x-auto pb-4 flex-1 min-h-0 pr-[600px]">
+                        {lanes.map(lane => (
+                            <KanbanColumn
+                                key={lane.id}
+                                lane={lane}
+                                jobs={groupedJobs[lane.id]}
+                                onAdd={() => window.location.href = `/office/${officeId}/jobs/new`}
+                                onJobClick={(job) => setSelectedJobId(job.id)}
+                            />
+                        ))}
                     </div>
-                </header>
-
-                <div className="flex gap-6 overflow-x-auto pb-4 h-full">
-                    {lanes.map(lane => (
-                        <KanbanColumn
-                            key={lane.id}
-                            lane={lane}
-                            jobs={groupedJobs[lane.id]}
-                        />
-                    ))}
                 </div>
-            </div>
 
-            <DragOverlay>
-                {activeDragItem ? <KanbanCard job={activeDragItem} isOverlay /> : null}
-            </DragOverlay>
-        </DndContext>
+                <DragOverlay>
+                    {activeDragItem ? <KanbanCard job={activeDragItem} isOverlay /> : null}
+                </DragOverlay>
+            </DndContext>
+
+            {/* Side Panel Overlay */}
+            {selectedJobId && (
+                <JobDetailsPane
+                    jobId={selectedJobId}
+                    onClose={() => setSelectedJobId(null)}
+                />
+            )}
+        </div>
     );
 };

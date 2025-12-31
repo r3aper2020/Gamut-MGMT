@@ -1,6 +1,6 @@
 import React from 'react';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, Plus } from 'lucide-react';
 import { type Job } from '@/types/jobs';
 import { KanbanCard } from '@/pages/jobs/components/kanban/KanbanCard';
 
@@ -15,37 +15,61 @@ export interface Lane {
 interface KanbanColumnProps {
     lane: Lane;
     jobs: Job[];
+    onAdd?: () => void;
+    onJobClick?: (job: Job) => void;
 }
 
-export const KanbanColumn: React.FC<KanbanColumnProps> = ({ lane, jobs }) => {
+export const KanbanColumn: React.FC<KanbanColumnProps> = ({ lane, jobs, onAdd, onJobClick }) => {
     const { setNodeRef } = useSortable({ id: lane.id, data: { type: 'Lane', lane } });
 
     return (
-        <div ref={setNodeRef} className="flex flex-col min-w-[320px] h-full">
-            <div className="flex items-center justify-between mb-5 px-3">
+        <div ref={setNodeRef} className="flex flex-col min-w-[320px] h-full group/column">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_10px_currentColor]" style={{ backgroundColor: lane.colors, color: lane.colors }} />
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-text-secondary m-0">
+                    <h3 className="text-sm font-bold text-white m-0">
                         {lane.title}
                     </h3>
-                    <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded-full text-text-muted font-bold">
+                    <span className="text-xs text-text-secondary font-medium">
                         {jobs.length}
                     </span>
                 </div>
-                <MoreHorizontal size={14} className="text-text-muted cursor-pointer hover:text-white transition-colors" />
+                <div className="flex items-center gap-1 opacity-0 group-hover/column:opacity-100 transition-opacity">
+                    <MoreHorizontal size={16} className="text-text-muted cursor-pointer hover:text-white transition-colors" />
+                    {onAdd && (
+                        <button onClick={onAdd} className="p-1 hover:bg-white/10 rounded">
+                            <Plus size={16} className="text-text-muted hover:text-white" />
+                        </button>
+                    )}
+                </div>
             </div>
 
-            <div className="flex-1 bg-white/2 backdrop-blur-md rounded-2xl p-3 flex flex-col gap-3 min-h-[500px] border border-white/3">
+            {/* Content Area */}
+            <div className="flex-1 rounded-2xl flex flex-col gap-3 min-h-[500px]">
+                {/* Asana-style 'Quick Add' at top of list */}
+                {onAdd && (
+                    <button
+                        onClick={onAdd}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-text-muted hover:text-white hover:bg-white/5 rounded-xl transition-all text-left mb-1 group/add"
+                    >
+                        <div className="w-5 h-5 rounded-md border border-white/20 flex items-center justify-center group-hover/add:border-accent-electric group-hover/add:text-accent-electric transition-colors">
+                            <Plus size={12} />
+                        </div>
+                        Add Task
+                    </button>
+                )}
+
                 <SortableContext items={jobs.map(j => j.id)} strategy={verticalListSortingStrategy}>
                     {jobs.map(job => (
-                        <KanbanCard key={job.id} job={job} />
+                        <KanbanCard
+                            key={job.id}
+                            job={job}
+                            onClick={() => onJobClick?.(job)}
+                        />
                     ))}
                     {jobs.length === 0 && (
-                        <div className="flex-1 border-2 border-dashed border-white/5 rounded-xl flex flex-col items-center justify-center text-text-muted text-xs gap-2 py-10">
-                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
-                                <PlusCircle size={14} />
-                            </div>
-                            <span>Awaiting Claims</span>
+                        <div className="flex-1 border border-dashed border-white/5 rounded-xl flex flex-col items-center justify-center text-text-muted text-xs gap-2 py-10 opacity-50">
+                            <span>Drag tasks here</span>
                         </div>
                     )}
                 </SortableContext>

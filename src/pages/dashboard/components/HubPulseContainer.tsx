@@ -53,7 +53,7 @@ export const HubPulseContainer: React.FC<HubPulseContainerProps> = ({
     }, [profile?.orgId]);
 
     return (
-        <div className="min-h-screen bg-transparent text-text-primary p-4 md:p-8 font-sans selection:bg-accent-electric selection:text-black">
+        <div className="bg-transparent text-text-primary font-sans selection:bg-accent-electric selection:text-black">
 
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-6 border-b border-white/10">

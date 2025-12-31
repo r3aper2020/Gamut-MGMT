@@ -59,7 +59,7 @@ export const MainLayout: React.FC<{ children: ReactNode }> = ({ children }) => {
     const navGroups = groupNavItems(navItems);
 
     return (
-        <div className="flex bg-bg-primary mesh-gradient min-h-screen text-text-primary font-sans selection:bg-accent-electric/30">
+        <div className="flex bg-bg-primary mesh-gradient h-screen w-screen overflow-hidden text-text-primary font-sans selection:bg-accent-electric/30">
             <Sidebar
                 profile={profile}
                 organization={organization}
@@ -73,17 +73,21 @@ export const MainLayout: React.FC<{ children: ReactNode }> = ({ children }) => {
             />
 
             {/* Main Content */}
-            <main className="ms-72 flex-1 p-8 min-h-screen relative z-10 animate-in">
-                <Header
-                    activeOfficeId={activeOfficeId}
-                    activeOffice={activeOffice}
-                    activeDepartmentId={activeDepartmentId}
-                    departments={departments}
-                    profile={profile}
-                    onJobCreateClick={() => setShowJobModal(true)}
-                />
+            <main className="ms-72 flex-1 flex flex-col h-full overflow-hidden relative z-10 animate-in">
+                <div className="flex-none p-8 pb-0">
+                    <Header
+                        activeOfficeId={activeOfficeId}
+                        activeOffice={activeOffice}
+                        activeDepartmentId={activeDepartmentId}
+                        departments={departments}
+                        profile={profile}
+                        onJobCreateClick={() => setShowJobModal(true)}
+                    />
+                </div>
 
-                {children}
+                <div className="flex-1 overflow-auto p-8 pt-4 custom-scrollbar relative">
+                    {children}
+                </div>
 
                 {showJobModal && <JobCreate onClose={() => setShowJobModal(false)} />}
             </main>
