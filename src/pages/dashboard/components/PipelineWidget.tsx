@@ -7,7 +7,7 @@ interface PipelineWidgetProps {
 }
 
 export const PipelineWidget: React.FC<PipelineWidgetProps> = ({ jobs }) => {
-    const statuses = ['FNOL', 'MITIGATION', 'RECONSTRUCTION', 'REVIEW', 'CLOSEOUT'];
+    const statuses = ['PENDING', 'IN_PROGRESS', 'REVIEW', 'BILLING'];
 
     // Count jobs by status
     const counts = statuses.reduce((acc, status) => {
@@ -33,11 +33,10 @@ export const PipelineWidget: React.FC<PipelineWidgetProps> = ({ jobs }) => {
                     // Color mapping
                     let colorClass = 'bg-white/10';
                     let textClass = 'text-text-muted';
-                    if (status === 'FNOL') { colorClass = 'bg-status-fnol'; textClass = 'text-status-fnol'; }
-                    if (status === 'MITIGATION') { colorClass = 'bg-status-mitigation'; textClass = 'text-status-mitigation'; }
-                    if (status === 'RECONSTRUCTION') { colorClass = 'bg-status-reconstruction'; textClass = 'text-status-reconstruction'; }
+                    if (status === 'PENDING') { colorClass = 'bg-status-fnol'; textClass = 'text-status-fnol'; }
+                    if (status === 'IN_PROGRESS') { colorClass = 'bg-status-mitigation'; textClass = 'text-status-mitigation'; }
                     if (status === 'REVIEW') { colorClass = 'bg-accent-primary'; textClass = 'text-accent-primary'; }
-                    if (status === 'CLOSEOUT') { colorClass = 'bg-status-success'; textClass = 'text-status-success'; }
+                    if (status === 'BILLING') { colorClass = 'bg-status-success'; textClass = 'text-status-success'; }
 
                     return (
                         <div key={status} className="group">

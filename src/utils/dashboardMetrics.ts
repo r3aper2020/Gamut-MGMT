@@ -37,11 +37,10 @@ export const calculateMetrics = (jobs: Job[]): DashboardMetrics => {
         activeCount: 0,
         stuckCount: 0,
         pipeline: {
-            'FNOL': 0,
-            'MITIGATION': 0,
-            'RECONSTRUCTION': 0,
+            'PENDING': 0,
+            'IN_PROGRESS': 0,
             'REVIEW': 0,
-            'CLOSEOUT': 0
+            'BILLING': 0
         },
         aging: {
             '0-3': 0,
@@ -62,7 +61,7 @@ export const calculateMetrics = (jobs: Job[]): DashboardMetrics => {
             metrics.pipeline[job.status]++;
         }
 
-        if (job.status !== 'CLOSEOUT') {
+        if (job.status !== 'BILLING') {
             metrics.activeCount++;
 
             // Financials (simulated if missing)

@@ -11,9 +11,22 @@ interface JobRowProps {
     users: UserProfile[];
 }
 
+import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
+import { getEffectiveJobStatus } from '@/utils/jobStatusUtils';
+
 export const JobRow: React.FC<JobRowProps> = ({ job, departments, users }) => {
     const navigate = useNavigate();
     const params = useParams();
+    const { profile } = useAuth();
+    const { activeDepartmentId } = useOrganization();
+
+    // Determine Effective Status for Display
+    const effectiveDepartmentId = (profile?.role === 'DEPT_MANAGER' || profile?.role === 'MEMBER')
+        ? profile.departmentId
+        : activeDepartmentId;
+
+    const { status: displayStatus, isHistorical } = getEffectiveJobStatus(job, effectiveDepartmentId);
 
     // Context-Aware Navigation
     const handleNavigation = () => {
@@ -31,6 +44,11 @@ export const JobRow: React.FC<JobRowProps> = ({ job, departments, users }) => {
     const departmentName = departments.find(d => d.id === job.departmentId)?.name || 'Unknown Dept';
     const leadTech = users.find(u => u.uid === job.assignments?.leadTechnicianId);
 
+    // Color logic
+    const statusColorVar = isHistorical
+        ? (displayStatus === 'BILLING' ? 'reconstruction' : 'review')
+        : displayStatus.toLowerCase();
+
     return (
         <div
             onClick={handleNavigation}
@@ -39,12 +57,12 @@ export const JobRow: React.FC<JobRowProps> = ({ job, departments, users }) => {
             {/* Status Indicator Bar (Left Border effect) */}
             <div
                 className="absolute left-0 top-0 bottom-0 w-1 transition-all group-hover:w-1.5"
-                style={{ backgroundColor: `var(--status-${job.status.toLowerCase()})` }}
+                style={{ backgroundColor: isHistorical ? (displayStatus === 'BILLING' ? 'var(--status-reconstruction)' : '#eab308') : `var(--status-${statusColorVar})` }}
             />
 
             {/* Icon Box */}
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg ml-1`}
-                style={{ backgroundColor: `var(--status-${job.status.toLowerCase()})` }}
+                style={{ backgroundColor: isHistorical ? (displayStatus === 'BILLING' ? 'var(--status-reconstruction)' : '#eab308') : `var(--status-${statusColorVar})` }}
             >
                 <Briefcase size={24} />
             </div>
@@ -57,7 +75,7 @@ export const JobRow: React.FC<JobRowProps> = ({ job, departments, users }) => {
                         {job.customer.name}
                     </h4>
                     <span className="text-[0.65rem] font-bold px-2 py-0.5 rounded-md bg-white/5 text-text-secondary uppercase tracking-widest border border-white/10">
-                        {job.status}
+                        {displayStatus === 'REVIEW' ? 'Manager Review' : displayStatus.replace('_', ' ')}
                     </span>
                 </div>
 

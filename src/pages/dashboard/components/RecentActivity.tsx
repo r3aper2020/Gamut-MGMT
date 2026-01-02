@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, CheckCircle2, AlertCircle, FileDigit } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { type Job } from '@/types/jobs';
 
@@ -15,11 +15,10 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({ jobs }) => {
     // Helper to get status color/icon
     const getStatusConfig = (status: string) => {
         switch (status) {
-            case 'FNOL': return { color: 'text-status-fnol', icon: AlertCircle, bg: 'bg-status-fnol/10' };
-            case 'MITIGATION': return { color: 'text-status-mitigation', icon: AlertCircle, bg: 'bg-status-mitigation/10' };
-            case 'RECONSTRUCTION': return { color: 'text-status-reconstruction', icon: FileDigit, bg: 'bg-status-reconstruction/10' }; // FileDigit as placeholder
+            case 'PENDING': return { color: 'text-status-fnol', icon: AlertCircle, bg: 'bg-status-fnol/10' };
+            case 'IN_PROGRESS': return { color: 'text-status-mitigation', icon: AlertCircle, bg: 'bg-status-mitigation/10' };
             case 'REVIEW': return { color: 'text-accent-primary', icon: CheckCircle2, bg: 'bg-accent-primary/10' };
-            case 'CLOSEOUT': return { color: 'text-status-success', icon: CheckCircle2, bg: 'bg-status-success/10' };
+            case 'BILLING': return { color: 'text-status-success', icon: CheckCircle2, bg: 'bg-status-success/10' };
             default: return { color: 'text-text-muted', icon: Clock, bg: 'bg-white/5' };
         }
     };

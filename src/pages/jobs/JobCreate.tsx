@@ -193,7 +193,8 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
                 },
 
                 // Status
-                status: initialData?.status || 'FNOL' as JobStatus,
+                // Status
+                status: initialData?.status || 'PENDING' as JobStatus,
 
                 // Assignments
                 assignments: assignments,
@@ -217,7 +218,7 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
                     orgId: profile?.orgId,
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
-                    status: 'FNOL'
+                    status: 'PENDING'
                 });
             }
 
@@ -254,7 +255,7 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
                         </div>
                         <div>
                             <h2 className="text-2xl font-bold text-white leading-tight">Create Job</h2>
-                            <p className="text-text-secondary text-sm font-medium tracking-wide">Enter FNOL Details</p>
+                            <p className="text-text-secondary text-sm font-medium tracking-wide">Enter Job Details</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
@@ -348,7 +349,7 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-text-muted uppercase">FNOL Received (Date & Time)</label>
+                                    <label className="text-[10px] font-bold text-text-muted uppercase">Job Received (Date & Time)</label>
                                     <input
                                         type="datetime-local"
                                         value={fnolReceivedDate}

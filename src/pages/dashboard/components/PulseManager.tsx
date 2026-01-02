@@ -6,6 +6,7 @@ import {
     Clock,
     Megaphone
 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import { type Department } from '@/types/org';
 import { type UserProfile } from '@/types/team';
 import { JobRow } from '@/pages/jobs/components/JobRow';
@@ -30,7 +31,11 @@ export const PulseManager: React.FC<PulseManagerProps> = ({
     users
     // tasks
 }) => {
-    const unassignedJobs = jobs.filter(j => !j.assignments?.leadTechnicianId);
+    const { departmentId } = useParams();
+    const unassignedJobs = jobs.filter(j =>
+        !j.assignments?.leadTechnicianId &&
+        j.departmentId === departmentId
+    );
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">

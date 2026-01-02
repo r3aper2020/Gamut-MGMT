@@ -27,7 +27,7 @@ export const jobService = {
         );
 
         if (departmentId) {
-            q = query(q, where('departmentId', '==', departmentId));
+            q = query(q, where('departmentIds', 'array-contains', departmentId));
         }
 
         return onSnapshot(q, (snap) => {

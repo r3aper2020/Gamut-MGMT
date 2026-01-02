@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Calendar } from 'lucide-react';
 import { type Job } from '@/types/jobs';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface KanbanCardProps {
     job: Job;
@@ -21,10 +22,17 @@ export const KanbanCardView: React.FC<{
     listeners?: any;
     isDragging?: boolean;
 }> = ({ job, isOverlay, onClick, innerRef, style, attributes, listeners, isDragging }) => {
-    const now = Date.now();
+    const { profile } = useAuth();
 
-    const daysInStage = Math.floor((now - (job.updatedAt?.toMillis() || now)) / (1000 * 3600 * 24));
-    const isStagnant = daysInStage > 5 && job.status !== 'CLOSEOUT';
+    // Check if this is a historical job (transferred away)
+    const isTransferred = profile?.role === 'DEPT_MANAGER' && profile.departmentId && job.departmentId !== profile.departmentId;
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const daysInStage = React.useMemo(() => {
+        const nowMs = Date.now();
+        return Math.floor((nowMs - (job.updatedAt?.toMillis() || nowMs)) / (1000 * 3600 * 24));
+    }, [job.updatedAt]);
+    const isStagnant = daysInStage > 5 && job.status !== 'BILLING';
 
     return (
         <div
@@ -52,9 +60,15 @@ export const KanbanCardView: React.FC<{
 
                 {/* Tags / Meta */}
                 <div className="flex items-center gap-2 mb-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-white/5 text-text-muted border border-white/5">
-                        {job.insurance.carrier}
-                    </span>
+                    {isTransferred ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-white/10 text-white border border-white/10 flex items-center gap-1">
+                            Transferred
+                        </span>
+                    ) : (
+                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-white/5 text-text-muted border border-white/5">
+                            {job.insurance.carrier}
+                        </span>
+                    )}
                     {daysInStage > 2 && (
                         <span className="text-[10px] text-text-muted flex items-center gap-1">
                             <Calendar size={10} /> {daysInStage}d

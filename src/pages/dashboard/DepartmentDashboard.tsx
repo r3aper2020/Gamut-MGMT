@@ -48,11 +48,9 @@ export const DepartmentDashboard: React.FC = () => {
         const unsubscribe = jobService.subscribeToOfficeJobs(
             profile.orgId,
             officeId,
-            null,
+            departmentId, // Pass departmentId to let service filter by history (array-contains)
             (list) => {
-                // Filter for this specific department
-                const deptJobs = list.filter(j => j.departmentId === departmentId);
-                setJobs(deptJobs);
+                setJobs(list);
                 setLoading(false);
             }
         );
@@ -90,7 +88,7 @@ export const DepartmentDashboard: React.FC = () => {
     const isExecOrGM = profile?.role === 'OWNER' || profile?.role === 'ORG_ADMIN' || profile?.role === 'OFFICE_ADMIN';
 
     // If Exec, we need 'entities' for bottom grid.
-    const jobEntities = isExecOrGM ? jobs.filter(j => j.status !== 'CLOSEOUT').map(j => ({
+    const jobEntities = isExecOrGM ? jobs.filter(j => j.status !== 'BILLING').map(j => ({
         id: j.id,
         name: j.customer?.name || 'Unknown',
         subtext: j.status,

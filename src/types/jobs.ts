@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export type JobStatus = 'FNOL' | 'MITIGATION' | 'RECONSTRUCTION' | 'REVIEW' | 'CLOSEOUT';
+export type JobStatus = 'PENDING' | 'IN_PROGRESS' | 'REVIEW' | 'BILLING';
 
 
 export interface JobAssignments {
@@ -12,6 +12,20 @@ export interface JobAssignments {
     inspectorId?: string;
     marketingRepId?: string;
     coordinatorId?: string;
+}
+
+export type PhaseStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED';
+
+export interface JobPhase {
+    id: string; // e.g. "phase_mitigation"
+    departmentId: string; // "dept_mitigation"
+    name: string; // "Mitigation"
+    status: PhaseStatus;
+    stage?: 'REVIEW' | 'BILLING'; // For Kanban persistence after handoff
+    data: ClaimData; // Re-use the existing ClaimData structure for each phase
+    assignments: JobAssignments;
+    completedBy?: string;
+    completedAt?: any; // Timestamp
 }
 
 export interface JobDetails {
@@ -35,6 +49,7 @@ export interface Job {
     orgId: string;
     officeId: string;
     departmentId: string;
+    departmentIds: string[]; // History of all depts involved
     status: JobStatus;
 
     // Core Identifiers
@@ -86,7 +101,8 @@ export interface Job {
     updatedAt: any;
 
     // AI / Field Tech Claim Data
-    claimData?: ClaimData;
+    phases?: JobPhase[];
+    claimData?: ClaimData; // @deprecated - Use phases[].data instead
 }
 
 export interface ClaimItem {

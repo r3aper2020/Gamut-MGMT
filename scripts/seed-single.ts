@@ -53,7 +53,11 @@ async function seed() {
             { id: deptMainRecon, orgId, officeId: officeMainId, name: 'Reconstruction' }
         ];
         for (const d of departments) {
-            await db.collection('departments').doc(d.id).set({ ...d, managerId: 'owner_single', createdAt: FieldValue.serverTimestamp() });
+            let managerId = 'owner_single';
+            if (d.name === 'Mitigation') managerId = 'mgr_mit_s';
+            if (d.name === 'Reconstruction') managerId = 'mgr_rec_s';
+
+            await db.collection('departments').doc(d.id).set({ ...d, managerId, createdAt: FieldValue.serverTimestamp() });
         }
 
         // 4. Users
@@ -63,6 +67,8 @@ async function seed() {
             { uid: 'gm_single', email: 'gm@single.com', role: 'OFFICE_ADMIN', name: 'Gary GM', officeId: officeMainId },
             { uid: 'mgr_mit_s', email: 'mgr.mit@single.com', role: 'DEPT_MANAGER', name: 'Mary Mitigation', officeId: officeMainId, departmentId: deptMainMit },
             { uid: 'mem_mit_s', email: 'tech.mit@single.com', role: 'MEMBER', name: 'Mike Member', officeId: officeMainId, departmentId: deptMainMit },
+            { uid: 'mgr_rec_s', email: 'mgr.rec@single.com', role: 'DEPT_MANAGER', name: 'Rick Reconstruction', officeId: officeMainId, departmentId: deptMainRecon },
+            { uid: 'mem_rec_s', email: 'tech.rec@single.com', role: 'MEMBER', name: 'Bob Builder', officeId: officeMainId, departmentId: deptMainRecon },
         ];
 
         for (const u of users) {
@@ -130,47 +136,62 @@ async function seed() {
             });
         }
 
+        const demoClaimData = {
+            preScan: {
+                measurements: [
+                    { room: 'Living Room', area: '350 sqft', perimeter: '75 ft', height: '9 ft' },
+                    { room: 'Kitchen', area: '200 sqft', perimeter: '50 ft', height: '9 ft' },
+                    { room: 'Master Bedroom', area: '280 sqft', perimeter: '68 ft', height: '10 ft' },
+                    { room: 'Master Bath', area: '120 sqft', perimeter: '42 ft', height: '10 ft' },
+                    { room: 'Hallway', area: '85 sqft', perimeter: '30 ft', height: '9 ft' },
+                    { room: 'Guest Bedroom', area: '180 sqft', perimeter: '54 ft', height: '9 ft' }
+                ],
+                images: generatedImages,
+                notes: 'LARGE LOSS: Initial scan indicates Class 3 water loss affecting >60% of the structure. Source: Main line rupture in slab. Extensive mitigation required.'
+            },
+            aiAnalysis: {
+                summary: 'CRITICAL ALERT: Class 3 Water Loss detected across multiple zones. High risk of secondary damage to structural components. Immediate stabilization required.',
+                severityScore: 9,
+                recommendedActions: [
+                    'Emergency Water Extraction (Truck Mount)',
+                    'Remove all floating flooring (1200 SF)',
+                    'Flood cut drywall 2ft/4ft in affected zones',
+                    'Deploy 12+ Axial Air Movers',
+                    'Deploy 4 XL LGR Dehumidifiers',
+                    'Containment barriers for Master Suite'
+                ],
+                referencedStandards: [
+                    { code: 'IICRC S500', description: 'Standard and Reference Guide for Professional Water Damage Restoration' },
+                    { code: 'ANSI/IICRC S520', description: 'Standard for Professional Mold Remediation' },
+                    { code: 'OSHA 1910', description: 'Occupational Safety and Health Standards' }
+                ]
+            },
+            lineItems: generatedLineItems
+        };
+
         const jobs = [
-            // AI Demo Job
+            // AI Demo Job (Multi-Phase)
             {
                 id: 'job_demo_ai_single',
                 officeId: officeMainId,
-                deptId: deptMainMit,
+                deptId: deptMainMit, // Fix: Must be in Mitigation Dept
                 cust: 'Sarah Connor (AI Demo - Large)',
-                status: 'MITIGATION',
-                assignedTo: ['mem_mit_s'],
-                claimData: {
-                    preScan: {
-                        measurements: [
-                            { room: 'Living Room', area: '350 sqft', perimeter: '75 ft', height: '9 ft' },
-                            { room: 'Kitchen', area: '200 sqft', perimeter: '50 ft', height: '9 ft' },
-                            { room: 'Master Bedroom', area: '280 sqft', perimeter: '68 ft', height: '10 ft' },
-                            { room: 'Master Bath', area: '120 sqft', perimeter: '42 ft', height: '10 ft' },
-                            { room: 'Hallway', area: '85 sqft', perimeter: '30 ft', height: '9 ft' },
-                            { room: 'Guest Bedroom', area: '180 sqft', perimeter: '54 ft', height: '9 ft' }
-                        ],
-                        images: generatedImages,
-                        notes: 'LARGE LOSS: Initial scan indicates Class 3 water loss affecting >60% of the structure. Source: Main line rupture in slab. Extensive mitigation required.'
-                    },
-                    aiAnalysis: {
-                        summary: 'CRITICAL ALERT: Class 3 Water Loss detected across multiple zones. High risk of secondary damage to structural components. Immediate stabilization required.',
-                        severityScore: 9,
-                        recommendedActions: [
-                            'Emergency Water Extraction (Truck Mount)',
-                            'Remove all floating flooring (1200 SF)',
-                            'Flood cut drywall 2ft/4ft in affected zones',
-                            'Deploy 12+ Axial Air Movers',
-                            'Deploy 4 XL LGR Dehumidifiers',
-                            'Containment barriers for Master Suite'
-                        ],
-                        referencedStandards: [
-                            { code: 'IICRC S500', description: 'Standard and Reference Guide for Professional Water Damage Restoration' },
-                            { code: 'ANSI/IICRC S520', description: 'Standard for Professional Mold Remediation' },
-                            { code: 'OSHA 1910', description: 'Occupational Safety and Health Standards' }
-                        ]
-                    },
-                    lineItems: generatedLineItems
-                }
+                status: 'PENDING',
+                assignedTo: ['mgr_mit_s', 'mem_mit_s'], // Include Manager in assignments
+                phases: [
+                    {
+                        id: 'phase_mit_01',
+                        departmentId: deptMainMit,
+                        name: 'Mitigation',
+                        status: 'ACTIVE',
+                        data: demoClaimData,
+                        assignments: {
+                            supervisorId: 'mgr_mit_s',
+                            leadTechnicianId: 'mem_mit_s',
+                            teamMemberIds: []
+                        }
+                    }
+                ]
             }
         ];
 
@@ -180,6 +201,7 @@ async function seed() {
                 orgId,
                 officeId: j.officeId,
                 departmentId: j.deptId,
+                departmentIds: [deptMainMit], // Only starts in Mitigation
                 status: j.status,
                 customer: { name: j.cust, phone: '555-0100', email: 'cust@example.com' },
                 property: { address: '742 Evergreen Tce', city: 'Metro City', state: 'NY', zip: '10001' },
@@ -195,11 +217,10 @@ async function seed() {
                     lossCategory: 'Water',
                     lossDescription: 'Water damage from burst pipe in kitchen.'
                 },
-                assignments: {
-                    leadTechnicianId: j.assignedTo[0]
-                },
                 // @ts-ignore
-                claimData: j.claimData || null,
+                phases: j.phases || [],
+                // @ts-ignore
+                claimData: j.phases ? j.phases.find(p => p.status === 'ACTIVE')?.data : null, // Backwards compat for now
                 createdBy: 'owner_single',
                 createdAt: FieldValue.serverTimestamp(),
                 updatedAt: FieldValue.serverTimestamp()

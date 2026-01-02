@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     DndContext,
     DragOverlay,
@@ -21,6 +21,7 @@ import { useParams } from 'react-router-dom';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { getEffectiveJobStatus } from '@/utils/jobStatusUtils';
 import { type Job } from '@/types/jobs';
 import { jobService } from '@/pages/jobs/jobService';
 import { KanbanCard, KanbanCardView } from '@/pages/jobs/components/kanban/KanbanCard';
@@ -47,7 +48,7 @@ export const OperationsBoard: React.FC = () => {
     useEffect(() => {
         if (!profile) return;
 
-        let unsubscribe;
+        let unsubscribe: any;
 
         if (officeId) {
             // Office Context
@@ -56,9 +57,7 @@ export const OperationsBoard: React.FC = () => {
                 officeId,
                 effectiveDepartmentId || null,
                 (list: Job[]) => {
-                    // Filter out unassigned jobs for the board view as requested
-                    const assignedOnly = list.filter(j => !!j.assignments?.leadTechnicianId);
-                    setJobs(assignedOnly);
+                    setJobs(list);
                 }
             );
         } else {
@@ -66,9 +65,7 @@ export const OperationsBoard: React.FC = () => {
             unsubscribe = jobService.subscribeToOrganizationJobs(
                 profile.orgId,
                 (list: Job[]) => {
-                    // Filter out unassigned jobs for the board view as requested
-                    const assignedOnly = list.filter(j => !!j.assignments?.leadTechnicianId);
-                    setJobs(assignedOnly);
+                    setJobs(list);
                 }
             );
         }
@@ -78,28 +75,38 @@ export const OperationsBoard: React.FC = () => {
 
     // --- Lane Logic ---
     const lanes: Lane[] = [
-        { id: 'assigned', title: 'Assigned / Ready', colors: 'var(--status-fnol)' },
-        { id: 'in_progress', title: 'Field Operations', colors: 'var(--status-mitigation)' },
+        { id: 'assigned', title: 'Pending', colors: 'var(--status-fnol)' },
+        { id: 'in_progress', title: 'Work in Progress', colors: 'var(--status-mitigation)' },
         { id: 'review', title: 'Manager Review', colors: '#eab308' }, // Yellow
-        { id: 'done', title: 'Ready for Billing', colors: 'var(--status-reconstruction)' },
+        { id: 'done', title: 'Billing / Done', colors: 'var(--status-reconstruction)' },
     ];
 
-    const getLaneId = (job: Job): LaneId => {
-        if (job.status === 'CLOSEOUT') return 'done';
-        if (job.status === 'REVIEW') return 'review';
-        if (job.status === 'MITIGATION' || job.status === 'RECONSTRUCTION') return 'in_progress';
-        return 'assigned';
-    };
+
+
+    const getLaneId = useCallback((job: Job): LaneId => {
+        const { status, isHistorical } = getEffectiveJobStatus(job, effectiveDepartmentId);
+
+        if (status === 'BILLING') return 'done';
+        if (status === 'REVIEW') return 'review';
+        if (status === 'IN_PROGRESS') return 'in_progress';
+
+        // Safety: If historical but unknown status, default to Review
+        if (isHistorical && status === 'ACTIVE') return 'review';
+
+        return 'assigned'; // PENDING
+    }, [effectiveDepartmentId]);
 
     const groupedJobs = useMemo(() => {
         const groups: Record<LaneId, Job[]> = { assigned: [], in_progress: [], review: [], done: [] };
 
         jobs.forEach(job => {
             const lane = getLaneId(job);
-            groups[lane].push(job);
+            if (groups[lane]) {
+                groups[lane].push(job);
+            }
         });
         return groups;
-    }, [jobs]);
+    }, [jobs, getLaneId]);
 
     // --- DnD Handlers ---
     const sensors = useSensors(
@@ -141,27 +148,51 @@ export const OperationsBoard: React.FC = () => {
                 const updates: Partial<Job> = {};
 
                 if (targetLaneId === 'assigned') {
-                    updates.status = 'FNOL';
+                    updates.status = 'PENDING';
                 } else if (targetLaneId === 'in_progress') {
-                    // Always set to MITIGATION when entering Field Ops from another lane
-                    updates.status = 'MITIGATION';
+                    updates.status = 'IN_PROGRESS';
 
-                    if ((draggedJob.assignedUserIds?.length || 0) === 0) {
-                        updates.assignedUserIds = [profile?.uid || 'placeholder'];
+                    // Auto-assign Lead Tech if missing
+                    if (!draggedJob.assignments?.leadTechnicianId && profile?.uid) {
+                        updates.assignments = {
+                            ...draggedJob.assignments,
+                            leadTechnicianId: profile.uid
+                        };
+                        // Ensure they are in the ids array too
+                        const currentIds = draggedJob.assignedUserIds || [];
+                        if (!currentIds.includes(profile.uid)) {
+                            updates.assignedUserIds = [...currentIds, profile.uid];
+                        }
                     }
                 } else if (targetLaneId === 'review') {
                     updates.status = 'REVIEW';
                 } else if (targetLaneId === 'done') {
-                    updates.status = 'CLOSEOUT';
-                }
+                    updates.status = 'BILLING';
+                    try {
+                        // Check if updating historical phase (Status persistence)
+                        if (effectiveDepartmentId && draggedJob.departmentId !== effectiveDepartmentId) {
+                            const phaseIndex = draggedJob.phases?.findIndex(p => p.departmentId === effectiveDepartmentId);
+                            if (phaseIndex !== undefined && phaseIndex !== -1 && draggedJob.phases) {
+                                const newPhases = [...draggedJob.phases];
 
-                try {
-                    await jobService.updateJob(draggedJob.id, updates);
-                } catch (e) {
-                    console.error("Failed to update status", e);
+                                if (targetLaneId === 'done') {
+                                    newPhases[phaseIndex] = { ...newPhases[phaseIndex], stage: 'BILLING' };
+                                } else if (targetLaneId === 'review') {
+                                    newPhases[phaseIndex] = { ...newPhases[phaseIndex], stage: 'REVIEW' };
+                                }
+
+                                await jobService.updateJob(draggedJob.id, { phases: newPhases });
+                                return; // Exit, do not update main status
+                            }
+                        }
+
+                        await jobService.updateJob(draggedJob.id, updates);
+                    } catch (e) {
+                        console.error("Failed to update status", e);
+                    }
                 }
             }
-        }
+        };
     };
 
     // Disable DnD for Read-Only Members

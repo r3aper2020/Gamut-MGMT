@@ -198,6 +198,8 @@ export const LoginPage: React.FC = () => {
                                     <DemoBtn label="GM (Gary)" email="gm@single.com" setCreds={setCreds} />
                                     <DemoBtn label="Mgr (Mary Mit)" email="mgr.mit@single.com" setCreds={setCreds} />
                                     <DemoBtn label="Member (Mike)" email="tech.mit@single.com" setCreds={setCreds} />
+                                    <DemoBtn label="Mgr (Rick Rec)" email="mgr.rec@single.com" setCreds={setCreds} />
+                                    <DemoBtn label="Member (Bob)" email="tech.rec@single.com" setCreds={setCreds} />
                                 </>
                             )}
 

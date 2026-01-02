@@ -20,9 +20,10 @@ import {
 
 interface ClaimAnalysisProps {
     data: ClaimData;
+    readOnly?: boolean;
 }
 
-export const ClaimAnalysis: React.FC<ClaimAnalysisProps> = ({ data }) => {
+export const ClaimAnalysis: React.FC<ClaimAnalysisProps> = ({ data, readOnly = false }) => {
     // State for Photo Manager
     const [showPhotoManager, setShowPhotoManager] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
@@ -141,7 +142,7 @@ export const ClaimAnalysis: React.FC<ClaimAnalysisProps> = ({ data }) => {
                             className="text-xs font-bold text-accent-electric hover:underline flex items-center gap-1"
                         >
                             <Maximize2 size={12} />
-                            Manage Photos
+                            {readOnly ? 'View Photos' : 'Manage Photos'}
                         </button>
                     </div>
 
@@ -233,7 +234,7 @@ export const ClaimAnalysis: React.FC<ClaimAnalysisProps> = ({ data }) => {
                                     <Camera size={20} />
                                 </div>
                                 <div>
-                                    <h1 className="text-lg font-bold text-white">Photo Manager</h1>
+                                    <h1 className="text-lg font-bold text-white">Photo Manager {readOnly && '(Read Only)'}</h1>
                                     <div className="text-xs text-text-muted flex items-center gap-2">
                                         <span>{data.preScan.images.length} Total</span>
                                         <span>•</span>
@@ -393,21 +394,24 @@ export const ClaimAnalysis: React.FC<ClaimAnalysisProps> = ({ data }) => {
                                                 Notes / Caption
                                             </label>
                                             <textarea
-                                                className="w-full h-48 bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white focus:border-accent-electric focus:ring-1 outline-none resize-none leading-relaxed"
+                                                className="w-full h-48 bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white focus:border-accent-electric focus:ring-1 outline-none resize-none leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
                                                 defaultValue={data.preScan.images[selectedImageIndex].caption}
-                                                placeholder="Enter photo notes..."
+                                                placeholder={readOnly ? "No notes available." : "Enter photo notes..."}
+                                                disabled={readOnly}
                                             />
                                         </div>
 
                                         {/* Actions */}
-                                        <div className="pt-4 space-y-3">
-                                            <button className="w-full py-2.5 bg-accent-electric text-black font-bold rounded-lg text-sm hover:bg-white transition-colors flex items-center justify-center gap-2">
-                                                <Save size={14} /> Update Notes
-                                            </button>
-                                            <button className="w-full py-2.5 bg-white/5 text-white font-bold rounded-lg text-sm hover:bg-red-500/20 hover:text-red-500 transition-colors">
-                                                Delete Photo
-                                            </button>
-                                        </div>
+                                        {!readOnly && (
+                                            <div className="pt-4 space-y-3">
+                                                <button className="w-full py-2.5 bg-accent-electric text-black font-bold rounded-lg text-sm hover:bg-white transition-colors flex items-center justify-center gap-2">
+                                                    <Save size={14} /> Update Notes
+                                                </button>
+                                                <button className="w-full py-2.5 bg-white/5 text-white font-bold rounded-lg text-sm hover:bg-red-500/20 hover:text-red-500 transition-colors">
+                                                    Delete Photo
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </aside>
                             )}

@@ -36,15 +36,15 @@ const JobsList: React.FC = () => {
 
             // Department Context
             if (activeDepartmentId) {
-                q = query(q, where('departmentId', '==', activeDepartmentId));
+                q = query(q, where('departmentIds', 'array-contains', activeDepartmentId));
             } else if ((profile.role === 'MEMBER' || profile.role === 'DEPT_MANAGER') && profile.departmentId) {
                 // If no active department selected but user is member or manager, lock to their department
-                q = query(q, where('departmentId', '==', profile.departmentId));
+                q = query(q, where('departmentIds', 'array-contains', profile.departmentId));
             }
         } else if (profile.role === 'MEMBER') {
             // Members see ALL claims in their department
             if (profile.departmentId) {
-                q = query(q, where('departmentId', '==', profile.departmentId));
+                q = query(q, where('departmentIds', 'array-contains', profile.departmentId));
             } else {
                 // Fallback only if they somehow don't have a department
                 q = query(q, where('assignedUserIds', 'array-contains', profile.uid));
