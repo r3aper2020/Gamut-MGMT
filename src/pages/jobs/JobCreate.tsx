@@ -8,7 +8,8 @@ import {
     addDoc,
     doc,
     updateDoc,
-    serverTimestamp
+    serverTimestamp,
+    arrayUnion
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -157,6 +158,7 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
                 // Metadata
                 officeId,
                 departmentId,
+                // departmentIds handled in create/update blocks below
 
                 // Customer
                 customer: {
@@ -209,12 +211,14 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
                 // UPDATE EXISITING
                 await updateDoc(doc(db, 'jobs', jobId), {
                     ...commonData,
+                    departmentIds: arrayUnion(departmentId), // Ensure new dept is visible
                     updatedAt: serverTimestamp()
                 });
             } else {
                 // CREATE NEW
                 await addDoc(collection(db, 'jobs'), {
                     ...commonData,
+                    departmentIds: [departmentId], // Initialize history
                     orgId: profile?.orgId,
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
@@ -232,7 +236,7 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
 
 
     // --- HANDLERS ---
-    const handleAssignmentChange = (field: string, value: any) => {
+    const handleAssignmentChange = (field: keyof JobAssignments, value: string | string[]) => {
         setAssignments(prev => ({ ...prev, [field]: value }));
     };
 
@@ -284,8 +288,8 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
                                         value={officeId}
                                         onChange={(e) => setOfficeId(e.target.value)}
                                         required
-                                        disabled={!!profile?.officeId} // Lock if user is bound to an office
-                                        className={`input-field appearance-none ${!!profile?.officeId ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        disabled={Boolean(profile?.officeId)} // Lock if user is bound to an office
+                                        className={`input-field appearance-none ${profile?.officeId ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         <option value="" className="bg-bg-tertiary">Select...</option>
                                         {offices.map(o => <option key={o.id} value={o.id} className="bg-bg-tertiary">{o.name}</option>)}

@@ -22,7 +22,9 @@ import {
     X
 } from 'lucide-react';
 
-import { ClaimAnalysis } from './components/ClaimAnalysis';
+import { JobOverviewTab } from './tabs/JobOverviewTab';
+import { JobScopeTab } from './tabs/JobScopeTab';
+import { JobPhotosTab } from './tabs/JobPhotosTab';
 import { JobCreate } from './JobCreate';
 
 export const JobDetails: React.FC = () => {
@@ -52,6 +54,9 @@ export const JobDetails: React.FC = () => {
 
     // Phase Navigation
     const [activePhaseId, setActivePhaseId] = useState<string | null>(null);
+    // Tab Navigation for Content
+    type TabType = 'OVERVIEW' | 'SCOPE' | 'PHOTOS' | 'DOCS';
+    const [activeTab, setActiveTab] = useState<TabType>('OVERVIEW');
 
     // Initial Phase Selection
     useEffect(() => {
@@ -416,6 +421,37 @@ export const JobDetails: React.FC = () => {
 
                 {/* AI Claim Analysis - Full Width */}
                 {/* Multi-Phase Analysis Section */}
+                {/* Content Tabs Navigation */}
+                <div className="flex border-b border-white/10">
+                    {[
+                        { id: 'OVERVIEW', label: 'Overview', icon: BrainCircuit },
+                        { id: 'SCOPE', label: 'Scope (Line Items)', icon: Briefcase },
+                        { id: 'PHOTOS', label: 'Photos', icon: Users }, // Using generic icon if Camera not imported, but best to stick to consistent icons
+                    ].map(tab => {
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as TabType)}
+                                className={`
+                                    px-6 py-4 text-sm font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2
+                                    ${isActive
+                                        ? 'border-accent-electric text-white'
+                                        : 'border-transparent text-text-muted hover:text-white hover:border-white/20'}
+                                `}
+                            >
+                                {tab.label}
+                            </button>
+                        );
+                    })}
+                    <button disabled className="px-6 py-4 text-sm font-bold uppercase tracking-wider text-text-muted/30 cursor-not-allowed">
+                        Documents
+                    </button>
+                </div>
+
+
+                {/* AI Claim Analysis - Full Width */}
+                {/* Multi-Phase Analysis Section */}
                 {job.phases && job.phases.length > 0 ? (
                     <div className="space-y-6">
 
@@ -468,7 +504,7 @@ export const JobDetails: React.FC = () => {
                             )}
                         </div>
 
-                        {/* Active Phase Content */}
+                        {/* Active Phase Content - Tabbed View */}
                         {(() => {
                             const selectedPhase = job.phases.find(p => p.id === activePhaseId);
                             if (!selectedPhase) return null;
@@ -477,10 +513,24 @@ export const JobDetails: React.FC = () => {
 
                             return (
                                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <ClaimAnalysis
-                                        data={selectedPhase.data}
-                                        readOnly={isPhaseReadOnly}
-                                    />
+                                    {activeTab === 'OVERVIEW' && (
+                                        <JobOverviewTab
+                                            data={selectedPhase.data}
+                                            jobAddress={`${job.property.address}, ${job.property.city}`}
+                                        />
+                                    )}
+                                    {activeTab === 'SCOPE' && (
+                                        <JobScopeTab
+                                            data={selectedPhase.data}
+                                            readOnly={isPhaseReadOnly}
+                                        />
+                                    )}
+                                    {activeTab === 'PHOTOS' && (
+                                        <JobPhotosTab
+                                            data={selectedPhase.data}
+                                            readOnly={isPhaseReadOnly}
+                                        />
+                                    )}
                                 </div>
                             );
                         })()}
@@ -489,15 +539,42 @@ export const JobDetails: React.FC = () => {
                 ) : job.claimData ? (
                     // Legacy / Fallback for non-phased jobs
                     <div className="animate-in slide-in-from-bottom-8 duration-700 fade-in fill-mode-forwards">
-                        <ClaimAnalysis data={job.claimData} />
+                        {activeTab === 'OVERVIEW' && (
+                            <JobOverviewTab
+                                data={job.claimData}
+                                jobAddress={`${job.property.address}, ${job.property.city}`}
+                            />
+                        )}
+                        {activeTab === 'SCOPE' && (
+                            <JobScopeTab
+                                data={job.claimData}
+                            />
+                        )}
+                        {activeTab === 'PHOTOS' && (
+                            <JobPhotosTab
+                                data={job.claimData}
+                            />
+                        )}
                     </div>
                 ) : (
-                    <div className="glass p-10 rounded-2xl border border-white/5 border-dashed flex flex-col items-center justify-center text-center opacity-50">
-                        <BrainCircuit size={48} className="text-white/20 mb-4" />
-                        <h3 className="text-lg font-bold text-white">No AI Analysis Data</h3>
-                        <p className="text-text-muted max-w-md mt-2">
-                            This job has not yet been processed by the AI engine or field data is missing.
-                        </p>
+                    // Initial / Empty State - Render tabs with empty data
+                    <div className="animate-in slide-in-from-bottom-8 duration-700 fade-in fill-mode-forwards">
+                        {activeTab === 'OVERVIEW' && (
+                            <JobOverviewTab
+                                data={job.claimData || undefined}
+                                jobAddress={`${job.property.address}, ${job.property.city}`}
+                            />
+                        )}
+                        {activeTab === 'SCOPE' && (
+                            <JobScopeTab
+                                data={job.claimData || { lineItems: [], preScan: { images: [], measurements: [], notes: '' }, aiAnalysis: { summary: '', severityScore: 0, recommendedActions: [], referencedStandards: [] } }}
+                            />
+                        )}
+                        {activeTab === 'PHOTOS' && (
+                            <JobPhotosTab
+                                data={job.claimData || { preScan: { images: [], measurements: [], notes: '' }, lineItems: [], aiAnalysis: { summary: '', severityScore: 0, recommendedActions: [], referencedStandards: [] } }}
+                            />
+                        )}
                     </div>
                 )}
 

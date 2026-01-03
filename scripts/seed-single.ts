@@ -1,6 +1,9 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { getStorage } from 'firebase-admin/storage';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Force use of emulators - Must be set BEFORE initializeApp
 const PROJECT_ID = 'gamut-demo';
@@ -12,9 +15,40 @@ process.env.FIREBASE_STORAGE_EMULATOR_HOST = 'localhost:9107';
 console.log('🔧 Emulator Environment Configured (Single Office):');
 console.log(`- Project: ${PROJECT_ID}`);
 
-const app = initializeApp({ projectId: PROJECT_ID });
+const app = initializeApp({ projectId: PROJECT_ID, storageBucket: `${PROJECT_ID}.appspot.com` });
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
+
+// Helper to upload file to Storage Emulator
+async function uploadAsset(filename: string, destination: string): Promise<string | null> {
+    try {
+        const localPath = path.resolve('scripts/demo-assets', filename);
+        if (!fs.existsSync(localPath)) {
+            console.warn(`⚠️ Asset not found: ${localPath}`);
+            return null;
+        }
+
+        const bucket = storage.bucket();
+        console.log(`📤 Uploading ${filename} to ${bucket.name}/${destination}...`);
+
+        await bucket.upload(localPath, {
+            destination: destination,
+            public: true,
+            metadata: {
+                contentType: filename.endsWith('.usdz') ? 'model/vnd.usdz+zip' : 'image/jpeg',
+                contentDisposition: 'inline'
+            }
+        });
+
+        // Construct Emulator-compatible Public URL
+        return `http://localhost:9107/v0/b/${bucket.name}/o/${encodeURIComponent(destination)}?alt=media`;
+
+    } catch (e) {
+        console.error(`❌ Failed to upload ${filename}:`, e);
+        return null;
+    }
+}
 
 async function seed() {
     try {
@@ -123,7 +157,7 @@ async function seed() {
         // Calc totals
         generatedLineItems.forEach(i => i.total = parseFloat((i.quantity * i.unitPrice).toFixed(2)));
 
-        // Generate multiple images
+        // Generate multiple images (using placehold.co so no need to upload these particular ones)
         const generatedImages = [];
         const rooms = ['Living Room', 'Kitchen', 'Master Bath', 'Guest Bed', 'Hallway', 'Basement'];
         for (let i = 1; i <= 24; i++) {
@@ -136,8 +170,19 @@ async function seed() {
             });
         }
 
+        // Upload assets to Storage
+        console.log('📦 Uploading Assets to Storage Emulator...');
+        const sketchUrl = await uploadAsset('sketch.jpg', 'jobs/demo/sketch.jpg');
+        const modelUrl = await uploadAsset('scan.usdz', 'jobs/demo/scan.usdz');
+
+        console.log('✅ Assets Uploaded:');
+        console.log('   - Sketch:', sketchUrl);
+        console.log('   - Model:', modelUrl);
+
         const demoClaimData = {
             preScan: {
+                sketchUrl: sketchUrl,
+                model3dUrl: modelUrl,
                 measurements: [
                     { room: 'Living Room', area: '350 sqft', perimeter: '75 ft', height: '9 ft' },
                     { room: 'Kitchen', area: '200 sqft', perimeter: '50 ft', height: '9 ft' },
@@ -151,7 +196,6 @@ async function seed() {
             },
             aiAnalysis: {
                 summary: 'CRITICAL ALERT: Class 3 Water Loss detected across multiple zones. High risk of secondary damage to structural components. Immediate stabilization required.',
-                severityScore: 9,
                 recommendedActions: [
                     'Emergency Water Extraction (Truck Mount)',
                     'Remove all floating flooring (1200 SF)',
@@ -161,10 +205,13 @@ async function seed() {
                     'Containment barriers for Master Suite'
                 ],
                 referencedStandards: [
-                    { code: 'IICRC S500', description: 'Standard and Reference Guide for Professional Water Damage Restoration' },
-                    { code: 'ANSI/IICRC S520', description: 'Standard for Professional Mold Remediation' },
-                    { code: 'OSHA 1910', description: 'Occupational Safety and Health Standards' }
-                ]
+                    'IICRC S500 - Standard and Reference Guide for Professional Water Damage Restoration',
+                    'ANSI/IICRC S520 - Standard for Professional Mold Remediation',
+                    'OSHA 1910 - Occupational Safety and Health Standards'
+                ].map(s => {
+                    const parts = s.split(' - ');
+                    return { code: parts[0], description: parts[1] };
+                })
             },
             lineItems: generatedLineItems
         };

@@ -130,11 +130,13 @@ export interface ClaimPreScan {
         room?: string;
     }[];
     notes: string;
+    sketchUrl?: string;
+    model3dUrl?: string; // .usda (iOS AR)
+
 }
 
 export interface AIAnalysis {
     summary: string;
-    severityScore: number; // 1-10
     recommendedActions: string[];
     referencedStandards: {
         code: string; // e.g., "S500"
