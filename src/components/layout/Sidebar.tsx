@@ -53,7 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             icon={item.icon}
                             label={item.label}
                             to={item.to}
-                            active={location.pathname === item.to}
+                            isActive={location.pathname === item.to}
                         />
                     ))}
                 </div>

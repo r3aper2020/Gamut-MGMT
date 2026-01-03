@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export type JobStatus = 'PENDING' | 'IN_PROGRESS' | 'REVIEW' | 'BILLING';
+export type JobStatus = 'PENDING' | 'IN_PROGRESS' | 'REVIEW' | 'BILLING' | 'CLOSEOUT' | 'MITIGATION';
 
 
 export interface JobAssignments {

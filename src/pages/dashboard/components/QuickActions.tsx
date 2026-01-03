@@ -1,10 +1,10 @@
 import React from 'react';
-import { Plus, Users, FileText, Settings, Clock, Calendar } from 'lucide-react';
+import { Plus, Users, FileText, Settings, Clock, Calendar, type LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface QuickActionProps {
     label: string;
-    icon: React.ElementType;
+    icon: LucideIcon;
     to: string;
     color: string;
 }
