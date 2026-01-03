@@ -11,7 +11,8 @@ import {
     Wind,
     CloudRain,
     HelpCircle,
-    Biohazard
+    Biohazard,
+    Sprout
 } from 'lucide-react';
 import { JobMap } from '@/components/map/JobMap';
 
@@ -50,8 +51,14 @@ const getLossIcon = (type: string) => {
         bg: 'bg-gray-500/10',
         border: 'border-gray-500/20'
     };
-    if (t.includes('mold') || t.includes('bio')) return {
-        Icon: Biohazard, // Updated to Biohazard
+    if (t.includes('mold')) return {
+        Icon: Sprout,
+        color: 'text-emerald-400',
+        bg: 'bg-emerald-500/10',
+        border: 'border-emerald-500/20'
+    };
+    if (t.includes('bio')) return {
+        Icon: Biohazard,
         color: 'text-purple-400',
         bg: 'bg-purple-500/10',
         border: 'border-purple-500/20'
@@ -179,7 +186,7 @@ export const JobOverviewTab: React.FC<JobOverviewTabProps> = ({ job, classificat
             {/* CARD 3b: LOSS CLASSIFICATION (New - 1 col) */}
             <div className="xl:col-span-1 bg-[#111] rounded-3xl p-6 border border-white/5 flex flex-col justify-between group hover:border-white/10 transition-all relative overflow-hidden">
                 {/* Background Decorator */}
-                <div className={`absolute top-0 right-0 p-8 opacity-[0.03] grayscale pointer-events-none ${lossStyle.color}`}>
+                <div className={`absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none ${lossStyle.color}`}>
                     <lossStyle.Icon size={120} />
                 </div>
 
