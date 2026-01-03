@@ -227,7 +227,7 @@ function generateBurstPipeScenario() {
     // Consolidate all line items from findings for the main list
     const allLineItems = findings.flatMap(f => f.lineItems);
 
-    return { findings, allLineItems };
+    return { findings, allLineItems, photos };
 }
 
 function generateRestorationScenario() {
@@ -442,13 +442,22 @@ async function seed() {
                     { room: 'Living Room', area: '350 sqft', perimeter: '75 ft', height: '9 ft' },
                     { room: 'Kitchen', area: '200 sqft', perimeter: '50 ft', height: '9 ft' }
                 ],
-                // Simple placeholder photos for the photos tab
-                images: scenario.findings.flatMap(f => f.photos.map(p => ({
-                    url: p.url,
-                    caption: p.humanNote, // Use human note as caption
-                    timestamp: new Date(),
-                    room: "Kitchen"
-                }))),
+                // Photos: Mapped from findings (mostly Kitchen) + Manual Living Room photo
+                images: [
+                    ...scenario.findings.flatMap(f => f.photos.map(p => ({
+                        url: p.url,
+                        caption: p.humanNote,
+                        timestamp: new Date(),
+                        room: "Kitchen"
+                    }))),
+                    // Manually added to match 3D Model "Living Room" zone
+                    {
+                        url: scenario.photos.room_living || scenario.photos.floor, // Use exposed photos
+                        caption: 'Living room overview showing unaffected areas.',
+                        timestamp: new Date(),
+                        room: 'Living Room'
+                    }
+                ],
                 notes: 'LARGE LOSS: Initial scan indicates Class 3 water loss affecting >60% of the structure. Source: Main line rupture in slab. Extensive mitigation required.'
             },
             aiAnalysis: {
@@ -461,11 +470,20 @@ async function seed() {
                 referencedStandards: [
                     { code: 'IICRC S500', description: 'Standard for Professional Water Damage Restoration' },
                     { code: 'ANSI/IICRC S520', description: 'Standard for Professional Mold Remediation' }
-                ]
+                ],
+                confidence: 94
             },
             lineItems: scenario.allLineItems,
-            findings: scenario.findings // <--- NEW LINKED FIELD
+            findings: scenario.findings, // <--- NEW LINKED FIELD
+            classification: {
+                category: 3,
+                categoryDescription: "Black Water / Grossly Unsanitary",
+                class: 2,
+                classDescription: "Fast Evaporation Rate",
+                riskLevel: "High"
+            }
         };
+        demoClaimData.aiAnalysis.confidence = 94; // Explicit assignment since interface changed
 
         const reconScenario = generateRestorationScenario();
         const demoReconData = {
@@ -473,10 +491,18 @@ async function seed() {
             aiAnalysis: {
                 summary: 'Reconstruction Scope Generated: Cabinetry replacement and flooring refinishing approved.',
                 recommendedActions: ['Order Cabinetry', 'Schedule Sanding', 'Final Paint Touch-up'],
-                referencedStandards: [{ code: 'AWI 100', description: 'Architectural Woodwork Standards' }]
+                referencedStandards: [{ code: 'AWI 100', description: 'Architectural Woodwork Standards' }],
+                confidence: 98
             },
             lineItems: reconScenario.allLineItems,
-            findings: reconScenario.findings
+            findings: reconScenario.findings,
+            classification: {
+                category: 3,
+                categoryDescription: "Black Water / Grossly Unsanitary",
+                class: 2,
+                classDescription: "Fast Evaporation Rate",
+                riskLevel: "High"
+            }
         };
 
         const jobs = [

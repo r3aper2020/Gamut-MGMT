@@ -137,12 +137,21 @@ export interface ClaimPreScan {
 
 export interface AIAnalysis {
     summary: string;
+    confidence: number; // Added
     recommendedActions: string[];
     referencedStandards: {
         code: string; // e.g., "S500"
         description: string;
         url?: string;
     }[];
+}
+
+export interface LossClassification {
+    category: number;
+    categoryDescription: string;
+    class: number;
+    classDescription: string;
+    riskLevel: string;
 }
 
 
@@ -172,6 +181,7 @@ export interface Finding {
 export interface ClaimData {
     preScan: ClaimPreScan;
     aiAnalysis: AIAnalysis;
+    classification: LossClassification; // Added
     lineItems: ClaimItem[];
     findings?: Finding[];
 }

@@ -44,16 +44,19 @@ export const JobIntelligenceTab: React.FC<JobIntelligenceTabProps> = ({ data, de
     const mitigationNotes = processedFindings.filter(f => f.phase === 'Mitigation');
     const restorationNotes = processedFindings.filter(f => f.phase === 'Restoration');
 
-    // Static Analysis for now (could be dynamic later)
+    // Dynamic Field Analysis
     const fieldAnalysis = {
         summary: (data?.aiAnalysis?.summary) || "No AI analysis available.",
-        confidence: 94
+        confidence: data?.aiAnalysis?.confidence || 0
     };
 
-    const classification = {
-        category: 3,
-        class: 2,
-        riskLevel: "High"
+    // Dynamic Classification
+    const classification = data?.classification || {
+        category: 0,
+        categoryDescription: "Unknown",
+        class: 0,
+        classDescription: "Unknown",
+        riskLevel: "Unknown"
     };
 
     // Logic to determine active view
@@ -129,7 +132,7 @@ export const JobIntelligenceTab: React.FC<JobIntelligenceTabProps> = ({ data, de
                         <div>
                             <div className="text-text-muted text-xs font-bold uppercase tracking-widest mb-1">IICRC Category</div>
                             <div className="text-2xl font-black text-white">Category {classification.category}</div>
-                            <div className="text-xs text-red-400 font-bold">Black Water / Grossly Unsanitary</div>
+                            <div className="text-xs text-red-400 font-bold">{classification.categoryDescription}</div>
                         </div>
                     </div>
                     <div className="h-full w-px bg-white/5 mx-4 hidden md:block" />
@@ -143,7 +146,7 @@ export const JobIntelligenceTab: React.FC<JobIntelligenceTabProps> = ({ data, de
                         <div>
                             <div className="text-text-muted text-xs font-bold uppercase tracking-widest mb-1">IICRC Class</div>
                             <div className="text-2xl font-black text-white">Class {classification.class}</div>
-                            <div className="text-xs text-blue-400 font-bold">Fast Evaporation Rate</div>
+                            <div className="text-xs text-blue-400 font-bold">{classification.classDescription}</div>
                         </div>
                     </div>
                 </div>
