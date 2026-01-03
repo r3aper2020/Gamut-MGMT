@@ -161,11 +161,17 @@ export const USDZViewer: React.FC<USDZViewerProps> = ({ url }) => {
         <div className="w-full h-full bg-black relative">
             <Canvas shadows dpr={[1, 2]} camera={{ fov: 50, position: [0, 0, 5] }}>
                 <Suspense fallback={<Loader />}>
-                    <Stage environment="city" intensity={0.6}>
+                    <Stage environment="city" intensity={0.6} adjustCamera={1.5}>
                         <Model url={url} />
                     </Stage>
                 </Suspense>
-                <OrbitControls makeDefault autoRotate autoRotateSpeed={0.5} />
+                <OrbitControls
+                    makeDefault
+                    autoRotate
+                    autoRotateSpeed={0.5}
+                    minDistance={2}
+                    maxDistance={20}
+                />
             </Canvas>
 
             {/* Hint Overlay */}

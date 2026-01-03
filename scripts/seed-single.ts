@@ -83,7 +83,8 @@ function generateBurstPipeScenario() {
         mold: "https://placehold.co/600x400/png?text=Microbial+Growth+Baseboard",
         cabinets: "https://placehold.co/600x400/png?text=Swollen+Cabinets",
         drywall: "https://placehold.co/600x400/png?text=Wet+Drywall+Cut",
-        floor: "https://placehold.co/600x400/png?text=Cupped+Hardwood"
+        floor: "https://placehold.co/600x400/png?text=Cupped+Hardwood",
+        room_living: "https://placehold.co/600x400/png?text=Living+Room+Overview"
     };
 
     const findings: ScenarioFinding[] = [];
