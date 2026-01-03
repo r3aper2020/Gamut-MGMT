@@ -23,7 +23,8 @@ import {
     Building2,
     Calendar,
     Clock,
-    Hash
+    Hash,
+    Activity
 } from 'lucide-react';
 
 import { JobOverviewTab } from './tabs/JobOverviewTab';
@@ -242,13 +243,46 @@ export const JobDetails: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {/* Status Dropdown (Manager/Admin Only) */}
+                        {isManagerOrAdmin && (
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                    <Activity size={14} className="text-accent-electric animate-pulse" />
+                                </div>
+                                <select
+                                    value={job.status}
+                                    onChange={async (e) => {
+                                        try {
+                                            await updateDoc(doc(db, 'jobs', jobId!), {
+                                                status: e.target.value,
+                                                updatedAt: serverTimestamp()
+                                            });
+                                        } catch (err) {
+                                            console.error("Failed to update status", err);
+                                        }
+                                    }}
+                                    className="appearance-none pl-9 pr-8 py-2 bg-accent-electric/10 border border-accent-electric/50 hover:border-accent-electric text-accent-electric font-black uppercase text-xs rounded-lg cursor-pointer outline-none transition-all shadow-[0_0_10px_rgba(0,242,255,0.1)] hover:shadow-[0_0_20px_rgba(0,242,255,0.2)] tracking-wider"
+                                >
+                                    <option value="PENDING" className="bg-[#111] text-text-muted font-medium">Pending</option>
+                                    <option value="IN_PROGRESS" className="bg-[#111] text-blue-400 font-bold">Work in Progress</option>
+                                    <option value="REVIEW" className="bg-[#111] text-yellow-500 font-bold">Manager Review</option>
+                                    <option value="BILLING" className="bg-[#111] text-orange-400 font-bold">Billing</option>
+                                    <option value="COMPLETED" className="bg-[#111] text-green-500 font-bold">Completed</option>
+                                    <option value="CANCELLED" className="bg-[#111] text-red-500 font-bold">Cancelled</option>
+                                </select>
+                                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-accent-electric">
+                                    <ArrowLeft size={10} className="-rotate-90" />
+                                </div>
+                            </div>
+                        )}
+
                         {canTransfer && (
                             <button
                                 onClick={() => setShowHandoffModal(true)}
                                 className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500 hover:text-black hover:border-green-500 rounded-lg font-bold transition-all shadow-[0_0_10px_rgba(34,197,94,0.1)] hover:shadow-[0_0_20px_rgba(34,197,94,0.4)] text-xs uppercase tracking-wider"
                             >
                                 <Send size={14} />
-                                Push Job
+                                <span className="hidden sm:inline">Push Job</span>
                             </button>
                         )}
                         {isManagerOrAdmin && (
@@ -257,7 +291,7 @@ export const JobDetails: React.FC = () => {
                                 className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all text-white font-bold text-xs uppercase tracking-wider"
                             >
                                 <Pencil size={14} />
-                                Edit
+                                <span className="hidden sm:inline">Edit</span>
                             </button>
                         )}
                     </div>
