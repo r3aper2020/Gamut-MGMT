@@ -67,7 +67,6 @@ export const JobMap: React.FC<JobMapProps> = ({ address, city, state, zip, class
                         lon = parseFloat(data[0].lon);
                     } else {
                         // 2. Fallback: Geocode City Center
-                        console.log("Address not found, falling back to city center...");
                         res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityQuery)}`, {
                             headers: { 'User-Agent': 'GamutManagementDemo/1.0' }
                         });
@@ -85,7 +84,6 @@ export const JobMap: React.FC<JobMapProps> = ({ address, city, state, zip, class
                 // Initialize or Update Map
                 if (!mapRef.current) {
                     if (mapContainerRef.current) {
-                        console.log("Initializing Map at target location...");
                         const map = L.map(mapContainerRef.current, {
                             zoomControl: false,
                             attributionControl: false

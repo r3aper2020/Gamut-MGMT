@@ -123,7 +123,6 @@ export const OperationsBoard: React.FC = () => {
 
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
-        // console.log('Drag End:', { active: active.id, over: over?.id });
         setActiveDragItem(null);
 
         if (!over) return;
@@ -145,6 +144,32 @@ export const OperationsBoard: React.FC = () => {
 
             const currentLaneId = getLaneId(draggedJob);
             if (currentLaneId !== targetLaneId) {
+
+                // 1. Handle Historical Job Updates (Phase Stage Only)
+                if (effectiveDepartmentId && draggedJob.departmentId !== effectiveDepartmentId) {
+                    const phaseIndex = draggedJob.phases?.findIndex(p => p.departmentId === effectiveDepartmentId);
+                    if (phaseIndex !== undefined && phaseIndex !== -1 && draggedJob.phases) {
+                        const newPhases = [...draggedJob.phases];
+                        let newStage: 'REVIEW' | 'BILLING' | undefined;
+
+                        if (targetLaneId === 'done') newStage = 'BILLING';
+                        else if (targetLaneId === 'review') newStage = 'REVIEW';
+
+                        if (newStage) {
+                            newPhases[phaseIndex] = { ...newPhases[phaseIndex], stage: newStage };
+                            try {
+                                await jobService.updateJob(draggedJob.id, { phases: newPhases });
+                            } catch (e) {
+                                console.error("Failed to update phase stage", e);
+                            }
+                        } else {
+                            console.warn("Cannot move historical job to non-review/billing lane");
+                        }
+                        return; // Stop here, do not update global status
+                    }
+                }
+
+                // 2. Handle Active Job Updates (Global Status)
                 const updates: Partial<Job> = {};
 
                 if (targetLaneId === 'assigned') {
@@ -168,24 +193,10 @@ export const OperationsBoard: React.FC = () => {
                     updates.status = 'REVIEW';
                 } else if (targetLaneId === 'done') {
                     updates.status = 'BILLING';
+                }
+
+                if (Object.keys(updates).length > 0) {
                     try {
-                        // Check if updating historical phase (Status persistence)
-                        if (effectiveDepartmentId && draggedJob.departmentId !== effectiveDepartmentId) {
-                            const phaseIndex = draggedJob.phases?.findIndex(p => p.departmentId === effectiveDepartmentId);
-                            if (phaseIndex !== undefined && phaseIndex !== -1 && draggedJob.phases) {
-                                const newPhases = [...draggedJob.phases];
-
-                                if (targetLaneId === 'done') {
-                                    newPhases[phaseIndex] = { ...newPhases[phaseIndex], stage: 'BILLING' };
-                                } else if (targetLaneId === 'review') {
-                                    newPhases[phaseIndex] = { ...newPhases[phaseIndex], stage: 'REVIEW' };
-                                }
-
-                                await jobService.updateJob(draggedJob.id, { phases: newPhases });
-                                return; // Exit, do not update main status
-                            }
-                        }
-
                         await jobService.updateJob(draggedJob.id, updates);
                     } catch (e) {
                         console.error("Failed to update status", e);

@@ -16,7 +16,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { type Office, type Department } from '@/types/org';
 import { type JobStatus, type JobAssignments, type Job } from '@/types/jobs';
 import { type UserProfile } from '@/types/team';
-import { ShieldAlert, Info, Users, Building, X, FileText, Pencil } from 'lucide-react';
+
+// Form Sub-Components
+import { JobCreateHeader } from './forms/JobCreateHeader';
+import { JobGeneralInfo } from './forms/JobGeneralInfo';
+import { JobInsuranceInfo } from './forms/JobInsuranceInfo';
+import { JobAssignmentsForm } from './forms/JobAssignments';
+import { JobNotes } from './forms/JobNotes';
 
 interface JobCreateProps {
     onClose: () => void;
@@ -47,7 +53,7 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
     const [carrier, setCarrier] = useState('');
     const [claimNumber, setClaimNumber] = useState('');
     const [lossDescription, setLossDescription] = useState('');
-    const [notes, setNotes] = useState(''); // Added missing state
+    const [notes, setNotes] = useState('');
 
     // Address
     const [address, setAddress] = useState('');
@@ -195,7 +201,6 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
                 },
 
                 // Status
-                // Status
                 status: initialData?.status || 'PENDING' as JobStatus,
 
                 // Assignments
@@ -235,13 +240,6 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
     };
 
 
-    // --- HANDLERS ---
-    const handleAssignmentChange = (field: keyof JobAssignments, value: string | string[]) => {
-        setAssignments(prev => ({ ...prev, [field]: value }));
-    };
-
-
-
     // Helper: Filter users by office (optional, strict) or just show all
     const availableUsers = officeId
         ? orgUsers.filter(u => !u.officeId || u.officeId === officeId) // Include unassigned or matching
@@ -251,21 +249,7 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-100 backdrop-blur-md p-4 md:p-8 overflow-y-auto">
             <div className="glass w-full max-w-7xl relative border border-white/10 shadow-2xl animate-in fade-in zoom-in duration-300 flex flex-col max-h-full">
 
-                {/* Header */}
-                <header className="flex items-center justify-between p-6 border-b border-white/10 flex-none bg-surface-elevation-1">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-accent-electric/20 flex items-center justify-center text-accent-electric">
-                            {jobId ? <Pencil size={24} /> : <ShieldAlert size={28} />}
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold text-white leading-tight">{jobId ? 'Edit Job' : 'Create Job'}</h2>
-                            <p className="text-text-secondary text-sm font-medium tracking-wide">{jobId ? 'Update Job Details' : 'Enter Job Details'}</p>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                        <X size={24} className="text-text-muted hover:text-white" />
-                    </button>
-                </header>
+                <JobCreateHeader isEditMode={!!jobId} onClose={onClose} />
 
                 {/* Scrollable Content Form */}
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -274,274 +258,42 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
                         {/* COL 1: GENERAL INFO (Name, Address, Phone, Dates) */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-2 text-accent-electric mb-4">
-                                <Info size={18} />
-                                <h3 className="text-sm font-black uppercase tracking-widest">General Info</h3>
-                            </div>
-
-                            {/* Office Context */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-text-muted uppercase">Office</label>
-                                    <select
-                                        value={officeId}
-                                        onChange={(e) => setOfficeId(e.target.value)}
-                                        required
-                                        disabled={Boolean(profile?.officeId)} // Lock if user is bound to an office
-                                        className={`input-field appearance-none ${profile?.officeId ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    >
-                                        <option value="" className="bg-bg-tertiary">Select...</option>
-                                        {offices.map(o => <option key={o.id} value={o.id} className="bg-bg-tertiary">{o.name}</option>)}
-                                    </select>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-text-muted uppercase">Department</label>
-                                    <select
-                                        value={departmentId}
-                                        onChange={(e) => setDepartmentId(e.target.value)}
-                                        required
-                                        disabled={!officeId || !!profile?.departmentId} // Lock if bound to dept (Manager/Member)
-                                        className={`input-field appearance-none ${(!officeId || !!profile?.departmentId) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    >
-                                        <option value="" className="bg-bg-tertiary">Select...</option>
-                                        {departments.map(d => <option key={d.id} value={d.id} className="bg-bg-tertiary">{d.name}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Customer Name */}
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-text-muted uppercase">Customer Name</label>
-                                <input
-                                    placeholder="Full Name"
-                                    value={customerName}
-                                    onChange={(e) => setCustomerName(e.target.value)}
-                                    required
-                                    className="input-field"
-                                />
-                            </div>
-
-                            {/* Address Block */}
-                            <div className="space-y-2 bg-white/5 p-4 rounded-xl border border-white/5">
-                                <label className="text-[10px] font-bold text-text-muted uppercase">Property Address</label>
-                                <input
-                                    placeholder="Street Address"
-                                    value={address}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    className="input-field mb-2"
-                                />
-                                <div className="grid grid-cols-2 gap-2">
-                                    <input placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} className="input-field" />
-                                    <input placeholder="State" value={state} onChange={(e) => setState(e.target.value)} className="input-field" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <input placeholder="ZIP" value={zip} onChange={(e) => setZip(e.target.value)} className="input-field" />
-                                    <input placeholder="County" value={county} onChange={(e) => setCounty(e.target.value)} className="input-field" />
-                                </div>
-                            </div>
-
-                            {/* Phone and Date */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-text-muted uppercase">Phone Number</label>
-                                    <input
-                                        placeholder="(555) 555-5555"
-                                        value={customerPhone}
-                                        onChange={(e) => setCustomerPhone(e.target.value)}
-                                        className="input-field"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-text-muted uppercase">Job Received (Date & Time)</label>
-                                    <input
-                                        type="datetime-local"
-                                        value={fnolReceivedDate}
-                                        onChange={(e) => setFnolReceivedDate(e.target.value)}
-                                        className="input-field"
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                        <JobGeneralInfo
+                            officeId={officeId} setOfficeId={setOfficeId}
+                            departmentId={departmentId} setDepartmentId={setDepartmentId}
+                            offices={offices} departments={departments} profile={profile}
+                            customerName={customerName} setCustomerName={setCustomerName}
+                            customerPhone={customerPhone} setCustomerPhone={setCustomerPhone}
+                            address={address} setAddress={setAddress}
+                            city={city} setCity={setCity}
+                            state={state} setState={setState}
+                            zip={zip} setZip={setZip}
+                            county={county} setCounty={setCounty}
+                            fnolReceivedDate={fnolReceivedDate} setFnolReceivedDate={setFnolReceivedDate}
+                        />
 
                         {/* COL 2: LOSS & INSURANCE (Moved Here) */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-2 text-status-mitigation mb-4">
-                                <Building size={18} />
-                                <h3 className="text-sm font-black uppercase tracking-widest">Loss & Insurance</h3>
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-text-muted uppercase">Date of Loss</label>
-                                <input
-                                    type="date"
-                                    value={lossDate}
-                                    onChange={(e) => setLossDate(e.target.value)}
-                                    className="input-field"
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-text-muted uppercase">Loss Type</label>
-                                <select
-                                    value={lossCategory}
-                                    onChange={(e) => setLossCategory(e.target.value)}
-                                    className="input-field appearance-none"
-                                >
-                                    <option value="" className="bg-bg-tertiary">Select Category...</option>
-                                    <option value="Water" className="bg-bg-tertiary">Water</option>
-                                    <option value="Fire" className="bg-bg-tertiary">Fire</option>
-                                    <option value="Mold" className="bg-bg-tertiary">Mold</option>
-                                    <option value="Storm" className="bg-bg-tertiary">Storm</option>
-                                    <option value="Biohazard" className="bg-bg-tertiary">Biohazard</option>
-                                </select>
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-text-muted uppercase">Insurance Carrier</label>
-                                <input
-                                    value={carrier}
-                                    onChange={(e) => setCarrier(e.target.value)}
-                                    className="input-field"
-                                    placeholder="e.g. State Farm"
-                                />
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-text-muted uppercase">Claim Number</label>
-                                <input
-                                    value={claimNumber}
-                                    onChange={(e) => setClaimNumber(e.target.value)}
-                                    className="input-field"
-                                />
-                            </div>
-
-                            <div className="space-y-2 pt-4 border-t border-white/5">
-                                <div className="flex items-center gap-2 text-accent-secondary mb-2">
-                                    <FileText size={18} />
-                                    <h3 className="text-xs font-black uppercase tracking-widest text-text-muted">General Description of Loss</h3>
-                                </div>
-                                <textarea
-                                    value={lossDescription}
-                                    onChange={(e) => setLossDescription(e.target.value)}
-                                    className="input-field min-h-[150px] resize-y"
-                                    placeholder="Enter the FNOL description here..."
-                                />
-                            </div>
-                        </div>
+                        <JobInsuranceInfo
+                            lossDate={lossDate} setLossDate={setLossDate}
+                            lossCategory={lossCategory} setLossCategory={setLossCategory}
+                            carrier={carrier} setCarrier={setCarrier}
+                            claimNumber={claimNumber} setClaimNumber={setClaimNumber}
+                            lossDescription={lossDescription} setLossDescription={setLossDescription}
+                        />
 
                         {/* COL 3: EMPLOYEE ASSIGNMENTS (New Hierarchy) */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-2 text-accent-primary mb-4">
-                                <Users size={18} />
-                                <h3 className="text-sm font-black uppercase tracking-widest">Assignments</h3>
-                            </div>
-
-                            {/* 1. SUPERVISOR (Auto-Department Manager) */}
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-text-muted uppercase">Supervisor (Dept. Manager)</label>
-                                <div className="input-field bg-white/5 opacity-75 cursor-not-allowed flex items-center justify-between">
-                                    <span>
-                                        {(() => {
-                                            const supervisor = orgUsers.find(u => u.departmentId === departmentId && u.role === 'DEPT_MANAGER');
-                                            return supervisor ? supervisor.displayName : 'No Manager Found';
-                                        })()}
-                                    </span>
-                                    <span className="text-xs italic opacity-50">Auto-assigned</span>
-                                </div>
-                            </div>
-
-                            {/* 2. LEAD TECHNICIAN */}
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-text-muted uppercase">Lead Technician</label>
-                                <select
-                                    value={assignments.leadTechnicianId || ''}
-                                    onChange={(e) => handleAssignmentChange('leadTechnicianId', e.target.value)}
-                                    className="input-field appearance-none"
-                                >
-                                    <option value="" className="bg-bg-tertiary">Select Lead Tech...</option>
-                                    {availableUsers
-                                        .filter(u => !['DEPT_MANAGER', 'OFFICE_ADMIN', 'ORG_ADMIN', 'OWNER'].includes(u.role)) // Exclude Managers & Above
-                                        .map(u => (
-                                            <option key={u.uid} value={u.uid} className="bg-bg-tertiary">
-                                                {u.displayName}
-                                            </option>
-                                        ))}
-                                </select>
-                            </div>
-
-                            {/* 3. ADDITIONAL TEAM MEMBERS */}
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-text-muted uppercase">Additional Team Members</label>
-                                <div className="space-y-2">
-                                    {/* Add Member Dropdown */}
-                                    <select
-                                        className="input-field appearance-none text-sm"
-                                        onChange={(e) => {
-                                            if (e.target.value) {
-                                                setAssignments(prev => ({
-                                                    ...prev,
-                                                    teamMemberIds: [...(prev.teamMemberIds || []), e.target.value]
-                                                }));
-                                            }
-                                        }}
-                                        value=""
-                                    >
-                                        <option value="" className="bg-bg-tertiary">+ Add Team Member...</option>
-                                        {availableUsers
-                                            .filter(u =>
-                                                !['DEPT_MANAGER', 'OFFICE_ADMIN', 'ORG_ADMIN', 'OWNER'].includes(u.role) &&
-                                                u.uid !== assignments.leadTechnicianId &&
-                                                !assignments.teamMemberIds?.includes(u.uid)
-                                            )
-                                            .map(u => (
-                                                <option key={u.uid} value={u.uid} className="bg-bg-tertiary">
-                                                    {u.displayName}
-                                                </option>
-                                            ))}
-                                    </select>
-
-                                    {/* Selected Members List */}
-                                    <div className="flex flex-wrap gap-2">
-                                        {assignments.teamMemberIds?.map(uid => {
-                                            const user = orgUsers.find(u => u.uid === uid);
-                                            if (!user) return null;
-                                            return (
-                                                <div key={uid} className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg border border-white/5">
-                                                    <span className="text-sm">{user.displayName}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setAssignments(prev => ({
-                                                            ...prev,
-                                                            teamMemberIds: prev.teamMemberIds?.filter(id => id !== uid)
-                                                        }))}
-                                                        className="hover:text-red-400 transition-colors"
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <JobAssignmentsForm
+                            assignments={assignments}
+                            setAssignments={setAssignments}
+                            orgUsers={orgUsers}
+                            availableUsers={availableUsers}
+                            departmentId={departmentId}
+                        />
 
                     </div>
 
                     {/* FULL WIDTH BOTTOM: ADDITIONAL NOTES */}
-                    <div className="space-y-2 bg-white/5 p-4 rounded-xl border border-white/5">
-                        <div className="flex items-center gap-2 text-accent-secondary mb-2">
-                            <FileText size={18} />
-                            <h3 className="text-sm font-black uppercase tracking-widest">Additional Notes</h3>
-                        </div>
-                        <textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            className="input-field min-h-[80px] resize-y"
-                            placeholder="Add any additional internal notes here..."
-                        />
-                    </div>
+                    <JobNotes notes={notes} setNotes={setNotes} />
 
                 </form>
 

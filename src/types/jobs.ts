@@ -21,7 +21,7 @@ export interface JobPhase {
     departmentId: string; // "dept_mitigation"
     name: string; // "Mitigation"
     status: PhaseStatus;
-    stage?: 'REVIEW' | 'BILLING'; // For Kanban persistence after handoff
+    stage?: 'PENDING' | 'IN_PROGRESS' | 'REVIEW' | 'BILLING'; // For Kanban persistence after handoff
     data: ClaimData; // Re-use the existing ClaimData structure for each phase
     assignments: JobAssignments;
     completedBy?: string;

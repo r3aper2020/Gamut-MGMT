@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { type ClaimData } from '@/types/jobs';
-import { Camera, Filter, Grid, ChevronLeft, ChevronRight, FileText, Pencil, Save, Trash2 } from 'lucide-react';
+import { Camera, Filter, Grid } from 'lucide-react';
+
+// Sub-components
+import { PhotoGrid } from './components/PhotoGrid';
+import { PhotoDetailView } from './components/PhotoDetailView';
+import { PhotoDetailSidebar } from './components/PhotoDetailSidebar';
 
 interface JobPhotosTabProps {
     data: ClaimData;
@@ -14,18 +19,21 @@ export const JobPhotosTab: React.FC<JobPhotosTabProps> = ({ data, readOnly }) =>
 
     // Derived State: Unique Rooms (Restored)
     const uniqueRooms = useMemo(() => {
+        if (!data.preScan?.images) return ['All'];
         const rooms = new Set(data.preScan.images.map(img => img.room || 'Uncategorized'));
         return ['All', ...Array.from(rooms)];
     }, [data.preScan.images]);
 
     // Derived State: Unique Categories (For Top Filter)
     const uniqueCategories = useMemo(() => {
+        if (!data.preScan?.images) return ['All'];
         const cats = new Set(data.preScan.images.map(img => img.category || 'Uncategorized'));
         const defaultOrder = ['Inspection/Pre-Demo', 'Demo/In-Progress', 'Post Demo/Completion', 'Inspection/Pre-Recon', 'Completion/Post-Recon', 'Uncategorized'];
         return ['All', ...Array.from(cats).sort((a, b) => defaultOrder.indexOf(a) - defaultOrder.indexOf(b))];
     }, [data.preScan.images]);
 
     const filteredImages = useMemo(() => {
+        if (!data.preScan?.images) return [];
         return data.preScan.images.filter(img => {
             const roomMatch = activeRoomFilter === 'All' || (img.room || 'Uncategorized') === activeRoomFilter;
             const catMatch = activeCategoryFilter === 'All' || (img.category || 'Uncategorized') === activeCategoryFilter;
@@ -51,14 +59,14 @@ export const JobPhotosTab: React.FC<JobPhotosTabProps> = ({ data, readOnly }) =>
                     </div>
                     <div className="h-4 w-px bg-white/10"></div>
                     <div className="text-xs text-text-muted flex items-center gap-2">
-                        <span>{data.preScan.images.length} Total</span>
+                        <span>{data.preScan?.images?.length || 0} Total</span>
                         <span>•</span>
                         <span>{activeRoomFilter === 'All' ? 'All Photos' : activeRoomFilter}</span>
                     </div>
                     <div className="text-xs text-text-muted flex items-center gap-2">
                         <span>{filteredImages.length} Shown</span>
                         <span>•</span>
-                        <span>{data.preScan.images.length} Total</span>
+                        <span>{data.preScan?.images?.length || 0} Total</span>
                     </div>
                 </div>
 
@@ -103,11 +111,11 @@ export const JobPhotosTab: React.FC<JobPhotosTabProps> = ({ data, readOnly }) =>
                         <div className="space-y-1">
                             {uniqueRooms.map(room => {
                                 // Count based on CURRENT category filter
-                                const count = data.preScan.images.filter(img => {
+                                const count = data.preScan?.images?.filter(img => {
                                     const rMatch = room === 'All' || (img.room || 'Uncategorized') === room;
                                     const cMatch = activeCategoryFilter === 'All' || (img.category || 'Uncategorized') === activeCategoryFilter;
                                     return rMatch && cMatch;
-                                }).length;
+                                }).length || 0;
 
                                 return (
                                     <button
@@ -140,115 +148,35 @@ export const JobPhotosTab: React.FC<JobPhotosTabProps> = ({ data, readOnly }) =>
                             </div>
                         ) : selectedImageIndex === null ? (
                             /* GRID VIEW */
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4">
-                                {filteredImages.map((img, idx) => (
-                                    <div
-                                        key={idx}
-                                        onClick={() => setSelectedImageIndex(getGlobalIndex(idx))}
-                                        className="group relative aspect-video bg-[#1a1a1a] rounded-xl overflow-hidden border border-white/5 hover:border-accent-electric cursor-pointer transition-all hover:shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:-translate-y-1"
-                                    >
-                                        <img src={img.url} alt={`Thumb ${idx}`} loading="lazy" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                                        <div className="absolute inset-0 bg-linear-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                                            <span className="text-[10px] font-bold text-accent-electric uppercase mb-0.5">{img.category || 'Uncategorized'}</span>
-                                            <p className="text-xs text-white line-clamp-1 font-medium">{img.caption || 'No caption'}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            <PhotoGrid
+                                images={filteredImages}
+                                onImageSelect={(idx) => setSelectedImageIndex(getGlobalIndex(idx))}
+                            />
                         ) : (
                             /* DETAIL VIEW */
-                            <div className="h-full flex items-center justify-center relative">
-                                <img
-                                    src={data.preScan.images[selectedImageIndex].url}
-                                    alt="Full View"
-                                    className="max-h-full max-w-full object-contain shadow-2xl rounded-lg"
-                                />
-
-                                {/* Nav Arrows */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        const currentFilteredIdx = filteredImages.indexOf(data.preScan.images[selectedImageIndex]);
-                                        const prevIdx = currentFilteredIdx > 0 ? currentFilteredIdx - 1 : filteredImages.length - 1;
-                                        setSelectedImageIndex(getGlobalIndex(prevIdx));
-                                    }}
-                                    className="absolute left-0 p-4 hover:bg-black/20 text-white/50 hover:text-accent-electric transition-colors h-full flex items-center"
-                                >
-                                    <ChevronLeft size={32} />
-                                </button>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        const currentFilteredIdx = filteredImages.indexOf(data.preScan.images[selectedImageIndex]);
-                                        const nextIdx = currentFilteredIdx < filteredImages.length - 1 ? currentFilteredIdx + 1 : 0;
-                                        setSelectedImageIndex(getGlobalIndex(nextIdx));
-                                    }}
-                                    className="absolute right-0 p-4 hover:bg-black/20 text-white/50 hover:text-accent-electric transition-colors h-full flex items-center"
-                                >
-                                    <ChevronRight size={32} />
-                                </button>
-                            </div>
+                            <PhotoDetailView
+                                image={data.preScan.images[selectedImageIndex]}
+                                onNext={() => {
+                                    const currentFilteredIdx = filteredImages.indexOf(data.preScan.images[selectedImageIndex]);
+                                    const nextIdx = currentFilteredIdx < filteredImages.length - 1 ? currentFilteredIdx + 1 : 0;
+                                    setSelectedImageIndex(getGlobalIndex(nextIdx));
+                                }}
+                                onPrev={() => {
+                                    const currentFilteredIdx = filteredImages.indexOf(data.preScan.images[selectedImageIndex]);
+                                    const prevIdx = currentFilteredIdx > 0 ? currentFilteredIdx - 1 : filteredImages.length - 1;
+                                    setSelectedImageIndex(getGlobalIndex(prevIdx));
+                                }}
+                            />
                         )}
                     </div>
                 </main>
 
                 {/* RIGHT: Sidebar (Only when image selected) */}
                 {selectedImageIndex !== null && (
-                    <aside className="w-80 border-l border-white/10 bg-black/20 flex flex-col animate-in slide-in-from-right-10 overflow-y-auto shrink-0">
-                        <div className="p-6 border-b border-white/5">
-                            <h3 className="font-bold text-white flex items-center gap-2">
-                                <FileText size={16} className="text-accent-electric" />
-                                Photo Details
-                            </h3>
-                        </div>
-                        <div className="p-6 space-y-6">
-                            {/* Info Block */}
-                            <div className="space-y-4">
-                                <div className="bg-white/5 p-4 rounded-xl border border-white/5 space-y-3">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-text-muted uppercase block">Category</label>
-                                        <div className="text-white text-sm font-medium">{data.preScan.images[selectedImageIndex].category || 'Unassigned'}</div>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-text-muted uppercase block">Room</label>
-                                        <div className="text-white text-sm font-medium">{data.preScan.images[selectedImageIndex].room || 'Unassigned'}</div>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-text-muted uppercase block">Timestamp</label>
-                                        <div className="text-white text-sm font-mono">
-                                            {new Date(data.preScan.images[selectedImageIndex].timestamp).toLocaleString()}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Editor */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-text-muted uppercase flex items-center gap-2">
-                                    <Pencil size={12} />
-                                    Notes / Caption
-                                </label>
-                                <textarea
-                                    className="w-full h-40 bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white focus:border-accent-electric focus:ring-1 outline-none resize-none leading-relaxed disabled:opacity-50"
-                                    defaultValue={data.preScan.images[selectedImageIndex].caption}
-                                    placeholder={readOnly ? "No notes available." : "Enter photo notes..."}
-                                    disabled={readOnly}
-                                />
-                            </div>
-
-                            {/* Actions */}
-                            {!readOnly && (
-                                <div className="pt-4 space-y-3">
-                                    <button className="w-full py-2.5 bg-accent-electric text-black font-bold rounded-lg text-sm hover:bg-white transition-colors flex items-center justify-center gap-2">
-                                        <Save size={14} /> Update Notes
-                                    </button>
-                                    <button className="w-full py-2.5 bg-white/5 text-white font-bold rounded-lg text-sm hover:bg-red-500/20 hover:text-red-500 transition-colors flex items-center justify-center gap-2">
-                                        <Trash2 size={14} /> Delete Photo
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </aside>
+                    <PhotoDetailSidebar
+                        image={data.preScan.images[selectedImageIndex]}
+                        readOnly={readOnly}
+                    />
                 )}
             </div>
         </div>
