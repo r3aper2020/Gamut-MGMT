@@ -70,7 +70,7 @@ interface ScenarioFinding {
         humanNote?: string;
         timestamp?: string;
     }[];
-    lineItems: { id: string; category: string; description: string; quantity: number; unit: string; unitPrice: number; total: number }[];
+    lineItems: { id: string; category: string; itemCode?: string; description: string; quantity: number; unit: string; unitPrice: number; total: number; aiRationale?: string; standardRef?: string; }[];
 }
 
 function generateBurstPipeScenario() {
@@ -172,8 +172,8 @@ function generateBurstPipeScenario() {
             }
         ],
         lineItems: [
-            { id: `li_${lineItemCounter++}`, category: "Demolition", description: "Tear Out Wet Drywall (Flood Cut)", quantity: 120, unit: "SF", unitPrice: 1.80, total: 216.00 },
-            { id: `li_${lineItemCounter++}`, category: "Demolition", description: "Tear Out Wet Insulation", quantity: 120, unit: "SF", unitPrice: 0.95, total: 114.00 }
+            { id: `li_${lineItemCounter++}`, category: "Demolition", itemCode: "DMO DRY", description: "Tear Out Wet Drywall (Flood Cut)", quantity: 120, unit: "SF", unitPrice: 1.80, total: 216.00, aiRationale: "Saturation >50% renders material non-salvageable. Cut 2ft above water line.", standardRef: "IICRC S500" },
+            { id: `li_${lineItemCounter++}`, category: "Demolition", itemCode: "DMO INS", description: "Tear Out Wet Insulation", quantity: 120, unit: "SF", unitPrice: 0.95, total: 114.00, aiRationale: "Wet insulation loses R-value and promotes microbial growth. Remove.", standardRef: "IICRC S500" }
         ]
     });
 
@@ -268,9 +268,9 @@ function generateRestorationScenario() {
             }
         ],
         lineItems: [
-            { id: `li_r_${lineItemCounter++}`, category: "Cabinetry", description: "R&R Lower Cabinetry (Standard)", quantity: 18, unit: "LF", unitPrice: 210.00, total: 3780.00 },
-            { id: `li_r_${lineItemCounter++}`, category: "Cabinetry", description: "Countertop Detach & Reset", quantity: 18, unit: "LF", unitPrice: 45.00, total: 810.00 },
-            { id: `li_r_${lineItemCounter++}`, category: "Plumbing", description: "Plumbing Disconnect/Reconnect (Sink)", quantity: 1, unit: "EA", unitPrice: 250.00, total: 250.00 }
+            { id: `li_r_${lineItemCounter++}`, category: "Cabinetry", itemCode: "CAB LOW", description: "R&R Lower Cabinetry (Standard)", quantity: 18, unit: "LF", unitPrice: 210.00, total: 3780.00, aiRationale: "MDF swelling >15% is irreversible. Full replacement required to restore pre-loss condition.", standardRef: "AWI 400" },
+            { id: `li_r_${lineItemCounter++}`, category: "Cabinetry", itemCode: "CAB CT", description: "Countertop Detach & Reset", quantity: 18, unit: "LF", unitPrice: 45.00, total: 810.00, aiRationale: "Necessary to access lower cabinets for replacement.", standardRef: "AWI 400" },
+            { id: `li_r_${lineItemCounter++}`, category: "Plumbing", itemCode: "PLM SNK", description: "Plumbing Disconnect/Reconnect (Sink)", quantity: 1, unit: "EA", unitPrice: 250.00, total: 250.00, aiRationale: "Required for cabinetry removal.", standardRef: "IPC" }
         ]
     });
 
@@ -296,8 +296,8 @@ function generateRestorationScenario() {
             }
         ],
         lineItems: [
-            { id: `li_r_${lineItemCounter++}`, category: "Flooring", description: "Sand & Refinish Hardwood Floor", quantity: 180, unit: "SF", unitPrice: 4.50, total: 810.00 },
-            { id: `li_r_${lineItemCounter++}`, category: "Flooring", description: "Apply Polyurethane Finish (3 coats)", quantity: 180, unit: "SF", unitPrice: 1.20, total: 216.00 }
+            { id: `li_r_${lineItemCounter++}`, category: "Flooring", itemCode: "FCW SND", description: "Sand & Refinish Hardwood Floor", quantity: 180, unit: "SF", unitPrice: 4.50, total: 810.00, aiRationale: "Cupping <4mm can often be corrected by sanding once MC normalizes.", standardRef: "NWFA C200" },
+            { id: `li_r_${lineItemCounter++}`, category: "Flooring", itemCode: "FCW FIN", description: "Apply Polyurethane Finish (3 coats)", quantity: 180, unit: "SF", unitPrice: 1.20, total: 216.00, aiRationale: "Standard 3-coat finish to match existing sheen and protection.", standardRef: "NWFA C200" }
         ]
     });
 
@@ -323,11 +323,11 @@ function generateRestorationScenario() {
             }
         ],
         lineItems: [
-            { id: `li_r_${lineItemCounter++}`, category: "Insulation", description: "Install R-13 Kraft Face Insulation", quantity: 380, unit: "SF", unitPrice: 1.10, total: 418.00 },
-            { id: `li_r_${lineItemCounter++}`, category: "Drywall", description: "Hang, Tape, Float Drywall (5/8\")", quantity: 380, unit: "SF", unitPrice: 2.85, total: 1083.00 },
-            { id: `li_r_${lineItemCounter++}`, category: "Painting", description: "Seal/Prime Drywall", quantity: 380, unit: "SF", unitPrice: 0.65, total: 247.00 },
-            { id: `li_r_${lineItemCounter++}`, category: "Painting", description: "Paint Walls (2 coats, Latex)", quantity: 380, unit: "SF", unitPrice: 1.25, total: 475.00 },
-            { id: `li_r_${lineItemCounter++}`, category: "Painting", description: "Paint Baseboards/Trim", quantity: 65, unit: "LF", unitPrice: 1.50, total: 97.50 }
+            { id: `li_r_${lineItemCounter++}`, category: "Insulation", itemCode: "INS R13", description: "Install R-13 Kraft Face Insulation", quantity: 380, unit: "SF", unitPrice: 1.10, total: 418.00, aiRationale: "Replace insulation removed during flood cut.", standardRef: "ASTM C665" },
+            { id: `li_r_${lineItemCounter++}`, category: "Drywall", itemCode: "DRY 5/8", description: "Hang, Tape, Float Drywall (5/8\")", quantity: 380, unit: "SF", unitPrice: 2.85, total: 1083.00, aiRationale: "Match existing 5/8\" fire-rated drywall.", standardRef: "ASTM C840" },
+            { id: `li_r_${lineItemCounter++}`, category: "Painting", itemCode: "PNT SEAL", description: "Seal/Prime Drywall", quantity: 380, unit: "SF", unitPrice: 0.65, total: 247.00, aiRationale: "Required substrate preparation for new drywall.", standardRef: "PDCA P4" },
+            { id: `li_r_${lineItemCounter++}`, category: "Painting", itemCode: "PNT P2", description: "Paint Walls (2 coats, Latex)", quantity: 380, unit: "SF", unitPrice: 1.25, total: 475.00, aiRationale: "Standard 2-coat application for coverage and durability.", standardRef: "PDCA P5" },
+            { id: `li_r_${lineItemCounter++}`, category: "Painting", itemCode: "PNT TRIM", description: "Paint Baseboards/Trim", quantity: 65, unit: "LF", unitPrice: 1.50, total: 97.50, aiRationale: "Paint new trim to match existing.", standardRef: "PDCA P5" }
         ]
     });
 

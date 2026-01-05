@@ -129,7 +129,10 @@ export interface ClaimItem {
     unitPrice: number;
     total: number;
     category: string;
+    itemCode?: string; // e.g. "WTR EXT"
     notes?: string;
+    aiRationale?: string; // Reasoning for this line item
+    standardRef?: string; // e.g. "IICRC S500 12.3.4"
     revisions?: ClaimItemRevision[];
 }
 
