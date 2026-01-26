@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Camera, Phone, User, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface Props {
@@ -10,23 +10,23 @@ interface Props {
 }
 
 export const PersonalDetailsStep: React.FC<Props> = ({ onNext }) => {
-    const { profile } = useAuth();
+    const { user, profile } = useAuth();
     const [phoneNumber, setPhoneNumber] = useState(profile?.phoneNumber || '');
     const [photoURL] = useState(profile?.photoURL || '');
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!profile) return;
+        if (!user) return;
         setLoading(true);
 
         try {
             // Update user profile
-            await updateDoc(doc(db, 'users', profile.uid), {
+            await setDoc(doc(db, 'users', user.uid), {
                 phoneNumber,
                 photoURL, // Ideally this would be an uploaded file URL, keeping it simple for text input or we can skip
                 updatedAt: new Date()
-            });
+            }, { merge: true });
             onNext();
         } catch (error) {
             console.error("Error updating profile:", error);
@@ -57,7 +57,7 @@ export const PersonalDetailsStep: React.FC<Props> = ({ onNext }) => {
                     <label className="text-sm font-medium text-gray-300 uppercase tracking-wide">Display Name</label>
                     <div className="relative opacity-50 cursor-not-allowed" title="Contact admin to change">
                         <input
-                            value={profile?.displayName || ''}
+                            value={profile?.displayName || user?.displayName || ''}
                             disabled
                             className="w-full bg-[#1A1A1A] border border-gray-800 rounded-lg p-3 pl-10 text-white"
                         />

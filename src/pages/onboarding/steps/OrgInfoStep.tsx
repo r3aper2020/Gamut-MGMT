@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { doc, updateDoc } from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext';
+import { doc, updateDoc, collection, addDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface Props {
@@ -8,24 +9,66 @@ interface Props {
 }
 
 export const OrgInfoStep: React.FC<Props> = ({ onNext }) => {
+    const { user } = useAuth();
     const { organization: org } = useOrganization();
     const [orgName, setOrgName] = useState(org?.name || '');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!org?.id) return;
+        if (!user) return; // Should be authenticated
 
         setLoading(true);
+        setError(null);
         try {
-            const orgRef = doc(db, 'organizations', org.id);
-            await updateDoc(orgRef, {
-                name: orgName,
-                updatedAt: new Date()
-            });
+            if (org?.id) {
+                // Try Update existing
+                const orgRef = doc(db, 'organizations', org.id);
+                try {
+                    await updateDoc(orgRef, {
+                        name: orgName,
+                        updatedAt: new Date()
+                    });
+                } catch (updateError: any) {
+                    // If document doesn't exist (e.g. switched DBs), create it instead
+                    if (updateError.code === 'not-found' || updateError.message.includes('No document to update')) {
+                        // Create new Organization
+                        const orgRef = await addDoc(collection(db, 'organizations'), {
+                            name: orgName,
+                            createdAt: new Date(),
+                            updatedAt: new Date(),
+                            createdBy: user.uid
+                        });
+
+                        // Link User to Organization
+                        await setDoc(doc(db, 'users', user.uid), {
+                            orgId: orgRef.id,
+                            role: 'OWNER' // Ensure they are owner
+                        }, { merge: true });
+                    } else {
+                        throw updateError;
+                    }
+                }
+            } else {
+                // Create new Organization
+                const orgRef = await addDoc(collection(db, 'organizations'), {
+                    name: orgName,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    createdBy: user.uid
+                });
+
+                // Link User to Organization
+                await setDoc(doc(db, 'users', user.uid), {
+                    orgId: orgRef.id,
+                    role: 'OWNER' // Ensure they are owner
+                }, { merge: true });
+            }
             onNext();
-        } catch (error) {
-            console.error("Error updating org:", error);
+        } catch (err: any) {
+            console.error("Error saving org:", err);
+            setError(err.message || "Failed to save organization. Check console for details.");
         } finally {
             setLoading(false);
         }
@@ -48,6 +91,12 @@ export const OrgInfoStep: React.FC<Props> = ({ onNext }) => {
                         required
                     />
                 </div>
+
+                {error && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-400 text-sm">
+                        {error}
+                    </div>
+                )}
 
                 <button
                     type="submit"

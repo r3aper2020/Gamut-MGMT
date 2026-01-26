@@ -104,6 +104,7 @@ export interface Job {
     // AI / Field Tech Claim Data
     phases?: JobPhase[];
     claimData?: ClaimData; // @deprecated - Use phases[].data instead
+    roomScans?: RoomScan[];
 }
 
 export interface ClaimItemRevision {
@@ -154,7 +155,16 @@ export interface ClaimPreScan {
     notes: string;
     sketchUrl?: string;
     model3dUrl?: string; // .usda (iOS AR)
+    roomScans?: RoomScan[];
+}
 
+export interface RoomScan {
+    id: string;
+    roomName: string;
+    createdAt: any;
+    usdzUrl?: string; // Raw mesh
+    texturedModelUrl?: string; // Photogrammetry
+    floorPlanUrl?: string; // 2D Sketch
 }
 
 export interface AIAnalysis {

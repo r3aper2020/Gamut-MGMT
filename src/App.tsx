@@ -34,7 +34,7 @@ const ProtectedRoute: React.FC<{
   requireOnboarding = true,
   allowedRoles
 }) => {
-    const { user, profile, loading } = useAuth();
+    const { user, profile, loading, signOut } = useAuth();
     const location = useLocation();
 
     if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-accent-electric font-bold tracking-tighter text-2xl animate-pulse">GAMUT</div>;
@@ -70,7 +70,15 @@ const ProtectedRoute: React.FC<{
             <h1 className="text-2xl font-bold text-red-500">Access Denied</h1>
             <p className="text-text-muted">You are logged in but do not have an assigned Office or Department.</p>
             <p className="text-sm">Please contact your administrator.</p>
-            <button onClick={() => window.location.href = '/login'} className="text-accent-electric hover:underline">Return to Login</button>
+            <button
+              onClick={async () => {
+                await signOut();
+                window.location.href = '/login';
+              }}
+              className="text-accent-electric hover:underline"
+            >
+              Return to Login
+            </button>
           </div>
         );
       }

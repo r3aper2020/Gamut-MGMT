@@ -1,49 +1,121 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useParams } from 'react-router-dom';
 import { type Department } from '@/types/org';
-import { Network } from 'lucide-react';
+import { Network, Plus, X } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useOrganization } from '@/contexts/OrganizationContext';
 
 export const ManageDepartments: React.FC = () => {
     const { officeId } = useParams();
+    const { user } = useAuth();
+    const { organization } = useOrganization();
+
     const [depts, setDepts] = useState<Department[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Create State
+    const [showForm, setShowForm] = useState(false);
+    const [newDeptName, setNewDeptName] = useState('');
+    const [createLoading, setCreateLoading] = useState(false);
+
     useEffect(() => {
         if (!officeId) return;
-        const fetchDepts = async () => {
-            // In a real app we'd query by officeId. 
-            // Current seed data structure: Department has `officeId`? 
-            // Let's assume we fetch all and filter or query directly.
-            // Checking types: Department has parentOfficeId?
 
-            // Simplification: Just show a placeholder list for now or fetch all 'departments'
-            // I'll need to check the exact schema of Departments in a later step to be perfect.
-            // For now, let's just query departments collection.
+        const q = query(collection(db, 'departments'), where('officeId', '==', officeId));
 
-            const q = query(collection(db, 'departments'), where('officeId', '==', officeId));
-            const snap = await getDocs(q);
+        // Use onSnapshot for real-time updates
+        const unsubscribe = onSnapshot(q, (snap) => {
             setDepts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Department)));
             setLoading(false);
-        };
-        fetchDepts();
+        });
+
+        return () => unsubscribe();
     }, [officeId]);
+
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user || !officeId || !organization?.id || !newDeptName.trim()) return;
+
+        setCreateLoading(true);
+        try {
+            await addDoc(collection(db, 'departments'), {
+                orgId: organization.id,
+                officeId: officeId,
+                name: newDeptName.trim(),
+                managerId: user.uid,
+                createdAt: serverTimestamp(),
+                createdBy: user.uid
+            });
+            setNewDeptName('');
+            setShowForm(false);
+        } catch (error) {
+            console.error("Error creating department:", error);
+            alert("Failed to create department");
+        } finally {
+            setCreateLoading(false);
+        }
+    };
 
     return (
         <div className="flex flex-col gap-8">
-            <header>
-                <div className="text-accent-electric text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <Network size={14} /> Structure
+            <header className="flex justify-between items-end">
+                <div>
+                    <div className="text-accent-electric text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <Network size={14} /> Structure
+                    </div>
+                    <h1 className="text-4xl font-extrabold tracking-tight">Departments</h1>
+                    <p className="text-text-secondary mt-2">Operational units within this branch.</p>
                 </div>
-                <h1 className="text-4xl font-extrabold tracking-tight">Departments</h1>
-                <p className="text-text-secondary mt-2">Operational units within this branch.</p>
+
+                {!showForm && (
+                    <button
+                        onClick={() => setShowForm(true)}
+                        className="bg-accent-primary hover:bg-accent-primary-hover text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg hover:shadow-accent-primary/20 transition-all active:scale-95"
+                    >
+                        <Plus size={20} /> Add Department
+                    </button>
+                )}
             </header>
+
+            {showForm && (
+                <div className="glass p-6 border border-white/10 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <h3 className="text-lg font-bold mb-4">New Department</h3>
+                    <form onSubmit={handleCreate} className="flex gap-4 items-start">
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                value={newDeptName}
+                                onChange={(e) => setNewDeptName(e.target.value)}
+                                placeholder="Department Name (e.g. Sales, Mitigation, Reconstruction)"
+                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-accent-electric focus:ring-1 focus:ring-accent-electric outline-none"
+                                autoFocus
+                                required
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={createLoading}
+                            className="bg-accent-electric text-black px-6 py-3 rounded-xl font-bold hover:brightness-110 transition-all disabled:opacity-50"
+                        >
+                            {createLoading ? 'Saving...' : 'Create'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowForm(false)}
+                            className="bg-white/5 text-white px-4 py-3 rounded-xl hover:bg-white/10 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+                    </form>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {depts.length === 0 && !loading && (
                     <div className="glass p-12 text-center text-text-muted col-span-full border border-white/5">
-                        No departments found.
+                        No departments found. Create one to get started.
                     </div>
                 )}
 

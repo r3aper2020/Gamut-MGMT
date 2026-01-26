@@ -298,9 +298,13 @@ export const JobDetails: React.FC = () => {
                                         />
                                     )}
                                     {activeTab === 'MODEL' && (
-                                        <JobSiteModelTab
-                                            data={claimData}
-                                        />
+                                        <React.Fragment>
+                                            {console.log("DEBUG: Passing to Model Tab - Job:", job)}
+                                            <JobSiteModelTab
+                                                data={claimData}
+                                                roomScans={job?.roomScans || claimData?.preScan?.roomScans}
+                                            />
+                                        </React.Fragment>
                                     )}
                                     {activeTab === 'SCOPE' && (
                                         <JobScopeTab

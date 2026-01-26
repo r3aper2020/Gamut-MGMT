@@ -52,7 +52,13 @@ const JobsList: React.FC = () => {
         }
 
         const unsubscribe = onSnapshot(q, (snap) => {
-            setJobs(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job)));
+            const fetchedJobs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+            console.log("Fetched Jobs:", fetchedJobs.map(j => ({
+                id: j.id,
+                assignedUserIds: j.assignedUserIds,
+                assignments: j.assignments
+            })));
+            setJobs(fetchedJobs);
             setLoading(false);
         });
 

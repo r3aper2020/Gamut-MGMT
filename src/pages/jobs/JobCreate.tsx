@@ -295,7 +295,6 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
                             setAssignments={setAssignments}
                             orgUsers={orgUsers}
                             availableUsers={availableUsers}
-                            departmentId={departmentId}
                         />
 
                     </div>

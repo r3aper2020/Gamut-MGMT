@@ -24,7 +24,7 @@ import {
 type Section = 'general' | 'contact' | 'system' | 'security';
 
 export const ProfilePage: React.FC = () => {
-    const { profile } = useAuth();
+    const { profile, signOut } = useAuth();
     const { organization, offices, departments } = useOrganization();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -395,6 +395,18 @@ export const ProfilePage: React.FC = () => {
                                         className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-all font-medium text-sm"
                                     >
                                         Send Reset Email
+                                    </button>
+                                </div>
+                                <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5">
+                                    <div>
+                                        <h3 className="font-bold text-white">Sign Out</h3>
+                                        <p className="text-sm text-text-muted mt-1">Securely log out of your current session.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => signOut()}
+                                        className="px-4 py-2 bg-red-500 text-white border border-red-600 rounded-lg hover:bg-red-600 transition-all font-medium text-sm shadow-red-500/20 shadow-lg"
+                                    >
+                                        Sign Out
                                     </button>
                                 </div>
                                 <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5 opacity-60">

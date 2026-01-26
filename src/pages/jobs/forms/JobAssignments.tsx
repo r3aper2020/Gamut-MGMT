@@ -8,13 +8,11 @@ interface JobAssignmentsFormProps {
     setAssignments: React.Dispatch<React.SetStateAction<JobAssignments>>;
     orgUsers: UserProfile[];
     availableUsers: UserProfile[];
-    departmentId: string;
 }
 
 export const JobAssignmentsForm: React.FC<JobAssignmentsFormProps> = ({
     assignments, setAssignments,
-    orgUsers, availableUsers,
-    departmentId
+    orgUsers, availableUsers
 }) => {
     const handleAssignmentChange = (field: keyof JobAssignments, value: string | string[]) => {
         setAssignments(prev => ({ ...prev, [field]: value }));
@@ -27,18 +25,21 @@ export const JobAssignmentsForm: React.FC<JobAssignmentsFormProps> = ({
                 <h3 className="text-sm font-black uppercase tracking-widest">Assignments</h3>
             </div>
 
-            {/* 1. SUPERVISOR (Auto-Department Manager) */}
+            {/* 1. SUPERVISOR */}
             <div className="space-y-1">
-                <label className="text-[10px] font-bold text-text-muted uppercase">Supervisor (Dept. Manager)</label>
-                <div className="input-field bg-white/5 opacity-75 cursor-not-allowed flex items-center justify-between">
-                    <span>
-                        {(() => {
-                            const supervisor = orgUsers.find(u => u.departmentId === departmentId && u.role === 'DEPT_MANAGER');
-                            return supervisor ? supervisor.displayName : 'No Manager Found';
-                        })()}
-                    </span>
-                    <span className="text-xs italic opacity-50">Auto-assigned</span>
-                </div>
+                <label className="text-[10px] font-bold text-text-muted uppercase">Supervisor / Dept. Manager</label>
+                <select
+                    value={assignments.supervisorId || ''}
+                    onChange={(e) => handleAssignmentChange('supervisorId', e.target.value)}
+                    className="input-field appearance-none"
+                >
+                    <option value="" className="bg-bg-tertiary">Select Supervisor...</option>
+                    {availableUsers.map(u => (
+                        <option key={u.uid} value={u.uid} className="bg-bg-tertiary">
+                            {u.displayName} {u.role === 'DEPT_MANAGER' ? '(Manager)' : ''}
+                        </option>
+                    ))}
+                </select>
             </div>
 
             {/* 2. LEAD TECHNICIAN */}
@@ -50,13 +51,11 @@ export const JobAssignmentsForm: React.FC<JobAssignmentsFormProps> = ({
                     className="input-field appearance-none"
                 >
                     <option value="" className="bg-bg-tertiary">Select Lead Tech...</option>
-                    {availableUsers
-                        .filter(u => !['DEPT_MANAGER', 'OFFICE_ADMIN', 'ORG_ADMIN', 'OWNER'].includes(u.role)) // Exclude Managers & Above
-                        .map(u => (
-                            <option key={u.uid} value={u.uid} className="bg-bg-tertiary">
-                                {u.displayName}
-                            </option>
-                        ))}
+                    {availableUsers.map(u => (
+                        <option key={u.uid} value={u.uid} className="bg-bg-tertiary">
+                            {u.displayName}
+                        </option>
+                    ))}
                 </select>
             </div>
 
@@ -80,7 +79,6 @@ export const JobAssignmentsForm: React.FC<JobAssignmentsFormProps> = ({
                         <option value="" className="bg-bg-tertiary">+ Add Team Member...</option>
                         {availableUsers
                             .filter(u =>
-                                !['DEPT_MANAGER', 'OFFICE_ADMIN', 'ORG_ADMIN', 'OWNER'].includes(u.role) &&
                                 u.uid !== assignments.leadTechnicianId &&
                                 !assignments.teamMemberIds?.includes(u.uid)
                             )
