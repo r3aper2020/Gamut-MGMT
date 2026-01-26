@@ -274,11 +274,39 @@ export const JobDetails: React.FC = () => {
                             const isPhaseReadOnly = selectedPhase.status === 'COMPLETED';
 
                             const safeData = (selectedPhase.data as any) || {};
+
+                            // Merge Phase Data with Root Job Data (Mobile Uplods)
+                            // Mobile app currently writes to job.claimData, so we must merge that in
+                            // to ensure photos and measurements from mobile appear in the active phase.
+                            const rootClaimData = (job.claimData as any) || {};
+                            const rootPreScan = rootClaimData.preScan || {};
+                            const phasePreScan = safeData.preScan || {};
+
+                            const mergedPreScan = {
+                                ...phasePreScan,
+                                ...rootPreScan, // Root takes precedence or merges? 
+                                // Array merge for images to capture both sources without duplicates (naive check)
+                                images: [
+                                    ...(phasePreScan.images || []),
+                                    ...(rootPreScan.images || []).filter((img: any) =>
+                                        !phasePreScan.images?.some((pImg: any) => pImg.url === img.url)
+                                    )
+                                ],
+                                measurements: [
+                                    ...(phasePreScan.measurements || []),
+                                    ...(rootPreScan.measurements || []).filter((m: any) =>
+                                        !phasePreScan.measurements?.some((pM: any) => pM.area === m.area && pM.room === m.room)
+                                    )
+                                ]
+                            };
+
                             const claimData: any = {
                                 lineItems: safeData.lineItems || [],
-                                preScan: safeData.preScan || { images: [], measurements: [], notes: '' },
+                                preScan: mergedPreScan,
                                 aiAnalysis: safeData.aiAnalysis || { summary: '', recommendedActions: [], referencedStandards: [] },
-                                ...safeData
+                                ...safeData,
+                                // Ensure classification is passed through from root if missing in phase
+                                classification: safeData.classification || rootClaimData.classification
                             };
 
                             return (
@@ -297,14 +325,11 @@ export const JobDetails: React.FC = () => {
                                             departmentType={departments.find(d => d.id === selectedPhase.departmentId)?.type || 'GENERAL'}
                                         />
                                     )}
-                                    {activeTab === 'MODEL' && (
-                                        <React.Fragment>
-                                            {console.log("DEBUG: Passing to Model Tab - Job:", job)}
-                                            <JobSiteModelTab
-                                                data={claimData}
-                                                roomScans={job?.roomScans || claimData?.preScan?.roomScans}
-                                            />
-                                        </React.Fragment>
+                                    {activeTab === 'MODEL' && ((console.log("DEBUG: Passing to Model Tab - Job:", job) as any) || true) && (
+                                        <JobSiteModelTab
+                                            data={claimData}
+                                            roomScans={job?.roomScans || claimData?.preScan?.roomScans}
+                                        />
                                     )}
                                     {activeTab === 'SCOPE' && (
                                         <JobScopeTab

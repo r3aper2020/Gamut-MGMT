@@ -119,7 +119,7 @@ export const SimpleUSDZViewer: React.FC<USDZViewerProps> = ({ url }) => {
         <div className="w-full h-full bg-gradient-to-b from-gray-900 to-black relative">
             <Canvas shadows dpr={[1, 2]} camera={{ fov: 50, position: [0, 2, 5] }}>
                 <Suspense fallback={<Loader />}>
-                    <Environment preset="city" />
+                    <Environment preset="studio" />
                     <Stage intensity={0.5} adjustCamera={1.2} environment={null}>
                         <Model url={url} showStructureOnly={showStructureOnly} />
                     </Stage>
