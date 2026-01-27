@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { collection, updateDoc, setDoc, doc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { initializeApp, deleteApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, connectAuthEmulator, signOut } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { db, firebaseConfig } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
@@ -75,7 +75,7 @@ export const ManageUserModal: React.FC<ManageUserModalProps> = ({ onClose, onSuc
 
     // Fetch Departments when Office Changes
     useEffect(() => {
-        if (!selectedOfficeId) {
+        if (!selectedOfficeId || !profile?.orgId) {
             setAvailableDepartments([]);
             return;
         }
@@ -83,12 +83,12 @@ export const ManageUserModal: React.FC<ManageUserModalProps> = ({ onClose, onSuc
         // If editing and locked to a department, logic might just show current
 
         const fetchDepts = async () => {
-            const q = query(collection(db, 'departments'), where('officeId', '==', selectedOfficeId));
+            const q = query(collection(db, 'organizations', profile.orgId, 'departments'), where('officeId', '==', selectedOfficeId));
             const snap = await getDocs(q);
             setAvailableDepartments(snap.docs.map(d => ({ id: d.id, ...d.data() } as any)));
         };
         fetchDepts();
-    }, [selectedOfficeId]);
+    }, [selectedOfficeId, profile?.orgId]);
 
     const generateTempPassword = () => {
         return `Gamut${Math.floor(1000 + Math.random() * 9000)} !`;
@@ -103,10 +103,10 @@ export const ManageUserModal: React.FC<ManageUserModalProps> = ({ onClose, onSuc
             tempApp = initializeApp(firebaseConfig, tempAppName);
             const tempAuth = getAuth(tempApp);
 
-            if (import.meta.env.DEV) {
-                // IMPORTANT: Must point to same emulator if in dev
-                connectAuthEmulator(tempAuth, "http://localhost:9007");
-            }
+            // if (import.meta.env.DEV) {
+            //     // IMPORTANT: Must point to same emulator if in dev
+            //     connectAuthEmulator(tempAuth, "http://localhost:9007");
+            // }
 
             const cred = await createUserWithEmailAndPassword(tempAuth, email, pass);
             await signOut(tempAuth); // Sign out immediately just in case

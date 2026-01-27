@@ -21,9 +21,9 @@ export const ManageDepartments: React.FC = () => {
     const [createLoading, setCreateLoading] = useState(false);
 
     useEffect(() => {
-        if (!officeId) return;
+        if (!officeId || !organization?.id) return;
 
-        const q = query(collection(db, 'departments'), where('officeId', '==', officeId));
+        const q = query(collection(db, 'organizations', organization.id, 'departments'), where('officeId', '==', officeId));
 
         // Use onSnapshot for real-time updates
         const unsubscribe = onSnapshot(q, (snap) => {
@@ -32,7 +32,7 @@ export const ManageDepartments: React.FC = () => {
         });
 
         return () => unsubscribe();
-    }, [officeId]);
+    }, [officeId, organization?.id]);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,7 +40,7 @@ export const ManageDepartments: React.FC = () => {
 
         setCreateLoading(true);
         try {
-            await addDoc(collection(db, 'departments'), {
+            await addDoc(collection(db, 'organizations', organization.id, 'departments'), {
                 orgId: organization.id,
                 officeId: officeId,
                 name: newDeptName.trim(),

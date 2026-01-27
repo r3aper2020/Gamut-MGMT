@@ -5,7 +5,7 @@ import { type Job } from '@/types/jobs';
 export const jobService = {
     subscribeToOrganizationJobs: (orgId: string, callback: (jobs: Job[]) => void) => {
         const q = query(
-            collection(db, 'jobs'),
+            collection(db, 'organizations', orgId, 'jobs'),
             where('orgId', '==', orgId)
         );
 
@@ -21,7 +21,7 @@ export const jobService = {
 
     subscribeToOfficeJobs: (orgId: string, officeId: string, departmentId: string | null, callback: (jobs: Job[]) => void) => {
         let q = query(
-            collection(db, 'jobs'),
+            collection(db, 'organizations', orgId, 'jobs'),
             where('orgId', '==', orgId),
             where('officeId', '==', officeId)
         );
@@ -40,8 +40,8 @@ export const jobService = {
         });
     },
 
-    updateJob: async (jobId: string, updates: Partial<Job>) => {
-        const docRef = doc(db, 'jobs', jobId);
+    updateJob: async (orgId: string, jobId: string, updates: Partial<Job>) => {
+        const docRef = doc(db, 'organizations', orgId, 'jobs', jobId);
         await updateDoc(docRef, {
             ...updates,
             updatedAt: serverTimestamp()

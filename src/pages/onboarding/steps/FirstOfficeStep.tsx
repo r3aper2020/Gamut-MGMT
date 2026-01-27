@@ -22,7 +22,7 @@ export const FirstOfficeStep: React.FC<Props> = ({ onNext }) => {
 
         setLoading(true);
         try {
-            await addDoc(collection(db, 'offices'), {
+            await addDoc(collection(db, 'organizations', org.id, 'offices'), {
                 name: officeName,
                 orgId: org.id,
                 city,

@@ -28,7 +28,7 @@ const JobsList: React.FC = () => {
     useEffect(() => {
         if (!profile) return;
 
-        let q = query(collection(db, 'jobs'), where('orgId', '==', profile.orgId));
+        let q = query(collection(db, 'organizations', profile.orgId, 'jobs'), where('orgId', '==', profile.orgId));
 
         // Organizational Immersion Filtering
         if (targetOfficeId) {

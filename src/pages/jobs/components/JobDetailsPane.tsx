@@ -42,7 +42,7 @@ export const JobDetailsPane: React.FC<JobDetailsPaneProps> = ({ jobId, onClose }
         if (!jobId || !profile?.orgId) return;
 
         // Fetch Job
-        const unsubJob = onSnapshot(doc(db, 'jobs', jobId), (doc) => {
+        const unsubJob = onSnapshot(doc(db, 'organizations', profile.orgId, 'jobs', jobId), (doc) => {
             if (doc.exists()) {
                 const jobData = { id: doc.id, ...doc.data() } as Job;
                 setJob(jobData);
@@ -67,7 +67,7 @@ export const JobDetailsPane: React.FC<JobDetailsPaneProps> = ({ jobId, onClose }
     }, [jobId, profile?.orgId]);
 
     const handleSaveAssignments = async () => {
-        if (!jobId || !job) return;
+        if (!jobId || !job || !profile?.orgId) return;
         setSaving(true);
         try {
             const assignedIds = new Set<string>();
@@ -75,7 +75,7 @@ export const JobDetailsPane: React.FC<JobDetailsPaneProps> = ({ jobId, onClose }
             if (assignments.leadTechnicianId) assignedIds.add(assignments.leadTechnicianId);
             assignments.teamMemberIds?.forEach(id => assignedIds.add(id));
 
-            await updateDoc(doc(db, 'jobs', jobId), {
+            await updateDoc(doc(db, 'organizations', profile.orgId, 'jobs', jobId), {
                 assignments: assignments,
                 assignedUserIds: Array.from(assignedIds)
             });

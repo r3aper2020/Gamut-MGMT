@@ -54,9 +54,10 @@ export const JobDetails: React.FC = () => {
     }, [job?.phases, activePhaseId]);
 
     // Fetch Departments
+    // Fetch Departments
     useEffect(() => {
         if (!profile?.orgId) return;
-        const qDepts = query(collection(db, 'departments'), where('orgId', '==', profile.orgId));
+        const qDepts = query(collection(db, 'organizations', profile.orgId, 'departments'), where('orgId', '==', profile.orgId));
         const unsub = onSnapshot(qDepts, (snap) => {
             setDepartments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         });
@@ -67,7 +68,7 @@ export const JobDetails: React.FC = () => {
         if (!jobId || !profile?.orgId) return;
 
         // Fetch Job
-        const unsubJob = onSnapshot(doc(db, 'jobs', jobId), (doc) => {
+        const unsubJob = onSnapshot(doc(db, 'organizations', profile.orgId, 'jobs', jobId), (doc) => {
             if (doc.exists()) {
                 const jobData = { id: doc.id, ...doc.data() } as Job;
                 setJob(jobData);
@@ -89,6 +90,8 @@ export const JobDetails: React.FC = () => {
             unsubUsers();
         };
     }, [jobId, profile?.orgId]);
+
+
 
 
     const handleHandoff = async () => {
@@ -136,7 +139,8 @@ export const JobDetails: React.FC = () => {
             const updatedDepartmentIds = Array.from(new Set([...currentDeptIds, handoffTargetDeptId]));
 
             // 4. Update Job
-            await updateDoc(doc(db, 'jobs', jobId!), {
+            if (!profile?.orgId) throw new Error("Missing Org ID");
+            await updateDoc(doc(db, 'organizations', profile.orgId, 'jobs', jobId!), {
                 phases: updatedPhases,
                 departmentId: handoffTargetDeptId, // Transfer job ownership
                 departmentIds: updatedDepartmentIds, // Maintain history
@@ -179,7 +183,8 @@ export const JobDetails: React.FC = () => {
 
                     if (newStage) {
                         newPhases[phaseIndex] = { ...newPhases[phaseIndex], stage: newStage };
-                        await updateDoc(doc(db, 'jobs', jobId!), {
+                        if (!profile?.orgId) return;
+                        await updateDoc(doc(db, 'organizations', profile.orgId, 'jobs', jobId!), {
                             phases: newPhases,
                             updatedAt: serverTimestamp()
                         });
@@ -189,7 +194,8 @@ export const JobDetails: React.FC = () => {
                 }
             } else {
                 // 2. Updating Standard Active Job
-                await updateDoc(doc(db, 'jobs', jobId!), {
+                if (!profile?.orgId) return;
+                await updateDoc(doc(db, 'organizations', profile.orgId, 'jobs', jobId!), {
                     status: newStatus,
                     updatedAt: serverTimestamp()
                 });
@@ -351,7 +357,8 @@ export const JobDetails: React.FC = () => {
                                                         };
 
                                                         try {
-                                                            await updateDoc(doc(db, 'jobs', jobId!), {
+                                                            if (!profile?.orgId) return;
+                                                            await updateDoc(doc(db, 'organizations', profile.orgId, 'jobs', jobId!), {
                                                                 claimData: newClaimData,
                                                                 updatedAt: serverTimestamp()
                                                             });
@@ -375,7 +382,8 @@ export const JobDetails: React.FC = () => {
                                                 };
 
                                                 try {
-                                                    await updateDoc(doc(db, 'jobs', jobId!), {
+                                                    if (!profile?.orgId) return;
+                                                    await updateDoc(doc(db, 'organizations', profile.orgId, 'jobs', jobId!), {
                                                         phases: newPhases,
                                                         updatedAt: serverTimestamp()
                                                     });

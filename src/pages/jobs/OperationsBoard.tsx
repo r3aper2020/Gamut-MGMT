@@ -142,6 +142,12 @@ export const OperationsBoard: React.FC = () => {
             const draggedJob = jobs.find(j => j.id === active.id);
             if (!draggedJob) return;
 
+            // Ensure we have org context
+            if (!profile?.orgId) {
+                console.error("Cannot update job: Missing Org ID");
+                return;
+            }
+
             const currentLaneId = getLaneId(draggedJob);
             if (currentLaneId !== targetLaneId) {
 
@@ -158,7 +164,7 @@ export const OperationsBoard: React.FC = () => {
                         if (newStage) {
                             newPhases[phaseIndex] = { ...newPhases[phaseIndex], stage: newStage };
                             try {
-                                await jobService.updateJob(draggedJob.id, { phases: newPhases });
+                                await jobService.updateJob(profile.orgId, draggedJob.id, { phases: newPhases });
                             } catch (e) {
                                 console.error("Failed to update phase stage", e);
                             }
@@ -197,7 +203,7 @@ export const OperationsBoard: React.FC = () => {
 
                 if (Object.keys(updates).length > 0) {
                     try {
-                        await jobService.updateJob(draggedJob.id, updates);
+                        await jobService.updateJob(profile.orgId, draggedJob.id, updates);
                     } catch (e) {
                         console.error("Failed to update status", e);
                     }

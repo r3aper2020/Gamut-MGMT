@@ -34,10 +34,10 @@ export const OrgManagement: React.FC = () => {
         }
 
         if (!profile?.orgId) return;
-        let qOffices = query(collection(db, 'offices'), where('orgId', '==', profile.orgId));
+        let qOffices = query(collection(db, 'organizations', profile.orgId, 'offices'), where('orgId', '==', profile.orgId));
         if (profile.role === 'OFFICE_ADMIN' || profile.role === 'DEPT_MANAGER') {
             if (profile.officeId) {
-                qOffices = query(collection(db, 'offices'), where('orgId', '==', profile.orgId), where('id', '==', profile.officeId));
+                qOffices = query(collection(db, 'organizations', profile.orgId, 'offices'), where('orgId', '==', profile.orgId), where('id', '==', profile.officeId));
             }
         }
 
@@ -46,7 +46,7 @@ export const OrgManagement: React.FC = () => {
         });
 
         // 2. Query Departments based on scope
-        let qDepts = query(collection(db, 'departments'), where('orgId', '==', profile.orgId));
+        let qDepts = query(collection(db, 'organizations', profile.orgId, 'departments'), where('orgId', '==', profile.orgId));
         if (profile.role === 'OFFICE_ADMIN') {
             if (profile.officeId) {
                 qDepts = query(qDepts, where('officeId', '==', profile.officeId));
@@ -76,7 +76,7 @@ export const OrgManagement: React.FC = () => {
         if (!profile?.orgId || !showDeptForm) return;
 
         try {
-            await addDoc(collection(db, 'departments'), {
+            await addDoc(collection(db, 'organizations', profile.orgId, 'departments'), {
                 orgId: profile.orgId,
                 officeId: showDeptForm,
                 name: deptName,
@@ -95,7 +95,7 @@ export const OrgManagement: React.FC = () => {
         if (!profile?.orgId) return;
 
         try {
-            await addDoc(collection(db, 'offices'), {
+            await addDoc(collection(db, 'organizations', profile.orgId, 'offices'), {
                 orgId: profile.orgId,
                 name: officeName,
                 address: officeAddress,

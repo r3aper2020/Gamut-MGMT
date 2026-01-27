@@ -76,7 +76,7 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
         if (!profile?.orgId) return;
 
         // Fetch Offices
-        const qOffices = query(collection(db, 'offices'), where('orgId', '==', profile.orgId));
+        const qOffices = query(collection(db, 'organizations', profile.orgId, 'offices'), where('orgId', '==', profile.orgId));
         const unsubOffices = onSnapshot(qOffices, (snap) => {
             setOffices(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Office)));
         });
@@ -94,16 +94,16 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
     }, [profile?.orgId]);
 
     useEffect(() => {
-        if (!officeId) {
+        if (!officeId || !profile?.orgId) {
             setDepartments([]);
             return;
         }
-        const qDepts = query(collection(db, 'departments'), where('officeId', '==', officeId));
+        const qDepts = query(collection(db, 'organizations', profile.orgId, 'departments'), where('officeId', '==', officeId));
         const unsubDepts = onSnapshot(qDepts, (snap) => {
             setDepartments(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Department)));
         });
         return () => unsubDepts();
-    }, [officeId]);
+    }, [officeId, profile?.orgId]);
 
     // Pre-fill from Profile
     useEffect(() => {
@@ -220,17 +220,19 @@ export const JobCreate: React.FC<JobCreateProps> = ({ onClose, initialData, jobI
 
             if (jobId) {
                 // UPDATE EXISITING
-                await updateDoc(doc(db, 'jobs', jobId), {
+                if (!profile?.orgId) throw new Error("Missing Org ID");
+                await updateDoc(doc(db, 'organizations', profile.orgId, 'jobs', jobId), {
                     ...commonData,
                     departmentIds: arrayUnion(departmentId), // Ensure new dept is visible
                     updatedAt: serverTimestamp()
                 });
             } else {
                 // CREATE NEW
-                await addDoc(collection(db, 'jobs'), {
+                if (!profile?.orgId) throw new Error("Missing Org ID");
+                await addDoc(collection(db, 'organizations', profile.orgId, 'jobs'), {
                     ...commonData,
                     departmentIds: [departmentId], // Initialize history
-                    orgId: profile?.orgId,
+                    orgId: profile.orgId,
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
                     status: 'PENDING'

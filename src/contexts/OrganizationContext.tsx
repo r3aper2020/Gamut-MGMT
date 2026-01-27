@@ -50,13 +50,13 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         });
 
         // Listen to offices
-        const q = query(collection(db, 'offices'), where('orgId', '==', profile.orgId));
+        const q = query(collection(db, 'organizations', profile.orgId, 'offices'), where('orgId', '==', profile.orgId));
         const unsubscribeOffices = onSnapshot(q, (snap) => {
             const officesList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Office));
             setOffices(officesList);
         });
 
-        const qDepts = query(collection(db, 'departments'), where('orgId', '==', profile.orgId));
+        const qDepts = query(collection(db, 'organizations', profile.orgId, 'departments'), where('orgId', '==', profile.orgId));
         const unsubscribeDepts = onSnapshot(qDepts, (snap) => {
             const deptsList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Department));
             setDepartments(deptsList);

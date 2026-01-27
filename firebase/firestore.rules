@@ -1,7 +1,139 @@
+rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+
+    // --- Helper Functions ---
+
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Get the user's document data
+    // CAUTION: This incurs a document read for every rule evaluation.
+    // For production scaling, consider using Custom Claims in Authentication.
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Check if user belongs to the target organization
+    function isOrgMember(orgId) {
+      return isAuthenticated() && 
+             (
+               // Allow if orgId matches the user's profile
+               getUserData().orgId == orgId ||
+               // Or if the user IS the organization owner (if you have such logic, keeping it simple for now)
+               // For now, reliance on profile.orgId is the source of truth
+               false
+             );
+    }
+
+    // --- Collection Rules ---
+
+    // Users Collection
+    // - Authenticated users can read their own profile
+    // - Authenticated users can read profiles of other users in the SAME organization
+    // - Users can create/update only their own profile
+    // --- Improved Helper Functions ---
+    
+    // Get role of the authenticated user
+    function getMyRole() {
+      return getUserData().role;
+    }
+    
+    // Check if user is an Admin of the specific Org
+    function isOrgAdmin(orgId) {
+      return isAuthenticated() && 
+             getUserData().orgId == orgId && 
+             (getMyRole() == 'OWNER' || getMyRole() == 'ORG_ADMIN' || getMyRole() == 'OFFICE_ADMIN'); 
+    }
+
+    // Validate that a user isn't escalating privileges on self-update
+    function notUpdatingRoleOrOrg() {
+       return (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'orgId']));
+    }
+
+    // Validate if user is legitimately claiming ownership of an org they created
+    function isClaimingOwnership() {
+       return request.resource.data.role == 'OWNER' && 
+              get(/databases/$(database)/documents/organizations/$(request.resource.data.orgId)).data.createdBy == request.auth.uid;
+    }
+
+    // --- Collection Rules ---
+
+    // Users Collection
+    match /users/{userId} {
+      // 1. READ
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        (resource.data.orgId == getUserData().orgId)
+      );
+
+      // 2. CREATE
+      allow create: if isAuthenticated() && (
+        // A. Self-Signup (Bootstrapping)
+        (request.auth.uid == userId) || 
+        // B. Admin creating a user for their Org
+        (isOrgAdmin(request.resource.data.orgId))
+      );
+
+      // 3. UPDATE
+      allow update: if isAuthenticated() && (
+        // A. Self-Update (Restricted: Cannot change Role or OrgId)
+        (request.auth.uid == userId && notUpdatingRoleOrOrg()) ||
+        
+        // B. Admin Update (Can update roles/orgs for members)
+        (isOrgAdmin(resource.data.orgId)) ||
+        
+        // C. Claiming Ownership (Onboarding flow)
+        (request.auth.uid == userId && isClaimingOwnership())
+      );
+    }
+
+    // Organizations Root Collection
+    // - Only members can read the org document
+    match /organizations/{orgId} {
+      allow read: if isOrgMember(orgId);
+      
+      // Allow creation by authenticated users (e.g. Onboarding)
+      allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
+      
+      // Allow modification by members (or owners/admins)
+      allow update: if isOrgMember(orgId); 
+
+      // --- Subcollections ---
+      
+      // Jobs: Only accessible by org members
+      match /jobs/{jobId} {
+        allow read, write: if isOrgMember(orgId);
+        
+        // Job Subcollections (e.g. photos, components)
+        match /photos/{photoId} {
+           allow read, write: if isOrgMember(orgId);
+        }
+        match /components/{componentId} {
+           allow read, write: if isOrgMember(orgId);
+        }
+        match /roomSessions/{sessionId} {
+           allow read, write: if isOrgMember(orgId);
+        }
+      }
+
+      // Departments: Only accessible by org members
+      match /departments/{deptId} {
+        allow read, write: if isOrgMember(orgId);
+      }
+
+      // Offices: Only accessible by org members
+      match /offices/{officeId} {
+        allow read, write: if isOrgMember(orgId);
+      }
+    }
+    
+    // Explicitly Deny Root Collections (to enforce refactoring)
+    match /jobs/{jobId} {
+      allow read, write: if false; 
     }
   }
 }
